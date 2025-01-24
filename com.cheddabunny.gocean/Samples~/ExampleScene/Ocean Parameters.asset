@@ -38,11 +38,10 @@ MonoBehaviour:
     - rid: 8760515485916201239
       type: {class: GenericParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
       data:
-        diffusionProfile: {fileID: 11400000, guid: 0ff5f42b178590e47af75d21ee34a2bd,
-          type: 2}
         waterWritesToDepth: 1
-        randomSeed: 0
+        randomSeed: 33
         waterHeight: 44
+        diffusionProfile: {fileID: 11400000, guid: 0ff5f42b178590e47af75d21ee34a2bd, type: 2}
     - rid: 8760515485916201240
       type: {class: WindParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
       data:
@@ -115,8 +114,7 @@ MonoBehaviour:
     - rid: 8760515485916201245
       type: {class: ScreenParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
       data:
-        screenWaterNoiseTexture: {fileID: 2800000, guid: c9cffcf4147442f4394f72ea9228744c,
-          type: 3}
+        screenWaterNoiseTexture: {fileID: 2800000, guid: c9cffcf4147442f4394f72ea9228744c, type: 3}
         screenWaterTiling: 0.2
         screenWaterFadeSpeed: 1.3
     - rid: 8760515485916201246
@@ -143,10 +141,10 @@ MonoBehaviour:
     - rid: 8760515485916201248
       type: {class: MeshParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
       data:
-        chunkSize: 30
-        chunkGridResolution: 90
+        chunkSize: 90
+        chunkGridResolution: 30
         maxTessellation: 6
-        tessellationFalloff: 0.6
+        tessellationFalloff: 0.7
         tessellationOffset: 0
         cullPadding: 0
         displacementFalloff: 4

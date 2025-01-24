@@ -54,8 +54,7 @@ MonoBehaviour:
     m_Value: 0
   material:
     m_OverrideState: 0
-    m_Value: {fileID: -876546973899608171, guid: 02532cbb810fb404db49da84f1efe41e,
-      type: 3}
+    m_Value: {fileID: -876546973899608171, guid: 02532cbb810fb404db49da84f1efe41e, type: 3}
   airDensityR:
     m_OverrideState: 0
     m_Value: 0.04534
@@ -271,3 +270,21 @@ MonoBehaviour:
   - {fileID: -5723413423884440746}
   - {fileID: -6564153439173630570}
   - {fileID: -7654094403593497853}
+  - {fileID: 8404908341212931193}
+--- !u!114 &8404908341212931193
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a7ff42a8c5be6646ad3975f3a54c1eb, type: 3}
+  m_Name: DiffusionProfileList
+  m_EditorClassIdentifier: 
+  active: 1
+  diffusionProfiles:
+    m_OverrideState: 1
+    m_Value:
+    - {fileID: 11400000, guid: 0ff5f42b178590e47af75d21ee34a2bd, type: 2}
