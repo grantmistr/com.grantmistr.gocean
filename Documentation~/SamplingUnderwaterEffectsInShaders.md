@@ -1,13 +1,10 @@
 Example code, this is in a modified version of HDRPs forward pass hlsl file:
 	
-    `
 	#include "GOcean_Constants.hlsl"
 	#include "GOcean_UnderwaterSampling.hlsl"
-    `
 
 ...
 
-    `
 	#ifdef _SURFACE_TYPE_TRANSPARENT
             HDShadowContext sc = InitShadowContext();
             DirectionalLightData L = _DirectionalLightDatas[0];
@@ -59,4 +56,3 @@ Example code, this is in a modified version of HDRPs forward pass hlsl file:
     #else
             outColor = lerp(outColor, float4(fogColor, 1.0), fogMask);
     #endif
-    `
