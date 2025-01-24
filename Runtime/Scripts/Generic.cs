@@ -106,6 +106,12 @@ namespace GOcean
                 return;
             }
 
+            if (VolumeManager.instance.globalDefaultProfile == null)
+            {
+                Debug.Log("Could not get global default volume profile.");
+                return;
+            }
+
             if (!VolumeManager.instance.globalDefaultProfile.TryGet<DiffusionProfileList>(out DiffusionProfileList diffusionProfileList))
             {
                 Debug.Log("Could not get diffusion profile list on global default volume profile, creating one.");
