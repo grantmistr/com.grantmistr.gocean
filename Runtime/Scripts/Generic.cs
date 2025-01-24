@@ -49,7 +49,7 @@ namespace GOcean
         {
             InitializeParams(ocean.parametersUser.generic);
 
-            //AddDiffusionProfileToList(diffusionProfile);
+            AddDiffusionProfileToList(diffusionProfile);
             FindShaderPasses();
             InitializeTextures();
             SetMaterialKeywords();
@@ -98,7 +98,6 @@ namespace GOcean
             diffusionProfileHash = math.asfloat(DiffusionProfileHelper.GetDiffusionProfileHash(diffusionProfileGUI));
         }
 
-        // https://discussions.unity.com/t/cloning-volume-profiles-during-runtime/795633
         private async void AddDiffusionProfileToList(DiffusionProfileSettings diffusionProfile)
         {
             if (!await WaitForVolumeManagerInstanceInitialization(VolumeManager.instance))
@@ -107,13 +106,12 @@ namespace GOcean
                 return;
             }
 
-            // could add a diffusion profile list component
-            if (!VolumeManager.instance.globalDefaultProfile.TryGet(out DiffusionProfileList diffusionProfileList))
+            if (!VolumeManager.instance.globalDefaultProfile.TryGet<DiffusionProfileList>(out DiffusionProfileList diffusionProfileList))
             {
-                Debug.Log("Could not get diffusion profile list.");
-                return;
+                Debug.Log("Could not get diffusion profile list on global default volume profile, creating one.");
+                diffusionProfileList = VolumeManager.instance.globalDefaultProfile.Add<DiffusionProfileList>();
             }
-            
+
             if (!diffusionProfileList.diffusionProfiles.value.Contains(diffusionProfile))
             {
                 DiffusionProfileSettings[] newSettings = new DiffusionProfileSettings[diffusionProfileList.diffusionProfiles.value.Length + 1];
@@ -122,13 +120,12 @@ namespace GOcean
                     newSettings[i] = diffusionProfileList.diffusionProfiles.value[i];
                 }
                 newSettings[newSettings.Length - 1] = diffusionProfile;
-            
-                diffusionProfileList.diffusionProfiles.value = newSettings;
-                VolumeManager.instance.globalDefaultProfile.Reset();
-            }
 
-            HDMaterial.SetDiffusionProfileShaderGraph(ocean.OceanM, diffusionProfile, "_DiffusionProfile");
-            HDMaterial.SetDiffusionProfileShaderGraph(ocean.DistantOceanM, diffusionProfile, "_DiffusionProfile");
+                diffusionProfileList.diffusionProfiles.value = newSettings;
+
+                // it took literal days to figure out I needed to call this function. about had an aneurysm
+                VolumeManager.instance.OnVolumeComponentChanged(diffusionProfileList);
+            }
         }
 
         private async Task<bool> WaitForVolumeManagerInstanceInitialization(VolumeManager instance)
@@ -142,7 +139,9 @@ namespace GOcean
                     return false;
                 }
 
-                await Task.Delay(Mathf.RoundToInt(Time.deltaTime * 1000f));
+                int delay = Mathf.RoundToInt(Time.deltaTime * 1000f);
+                delay = delay == 0 ? 100 : delay;
+                await Task.Delay(delay);
             }
 
             return true;

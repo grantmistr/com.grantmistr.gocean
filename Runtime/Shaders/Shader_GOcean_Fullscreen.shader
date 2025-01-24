@@ -185,7 +185,7 @@ Shader "GOcean/Fullscreen"
     
         float mipLevelDepth = min(linearEyeDepth, _UnderwaterFogFadeDistance);
         float mipLevel = (1.0 - _MipFogMaxMip * saturate((mipLevelDepth - _MipFogNear) / (_MipFogFar - _MipFogNear))) * (ENVCONSTANTS_CONVOLUTION_MIP_COUNT - 1);
-        float3 skyColor = SampleSkyTexture(V, 6.0, 0).xyz;
+        float3 skyColor = SampleSkyTexture(V, mipLevel, 0).xyz;
         
         float3 fogColor = CalculateUnderwaterFogColor(_UnderwaterFogColor.xyz, skyColor, GetCurrentExposureMultiplier());
         fogColor = lerp(_WaterColor.xyz * skyColor * GetCurrentExposureMultiplier(), fogColor, underwaterMask);
