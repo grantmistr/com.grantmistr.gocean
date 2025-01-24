@@ -1,11 +1,11 @@
 # GOcean
-###### for HDRP
+## for HDRP
 
 GOcean is an infinite ocean rendering system for Unity HDRP.
 
 ### Installation
 
-[Unity Manual](https://docs.unity3d.com/Manual/upm-ui-install.html)
+[Unity Manual](https://docs.unity3d.com/Manual/upm-ui-install2.html)
 
 ### Requirements
 

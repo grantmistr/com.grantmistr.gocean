@@ -1,9 +1,9 @@
 using UnityEngine;
 
-using static GOcean.Helper;
-
 namespace GOcean
 {
+    using static Helper;
+    
     [ExecuteAlways]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UnityEngine.Terrain))]

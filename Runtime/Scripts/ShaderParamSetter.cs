@@ -3,11 +3,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor;
-using System;
-
-#if UNITY_EDITOR
-//using UnityEditor;
-#endif
 
 namespace GOcean
 {

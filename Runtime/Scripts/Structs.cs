@@ -3,7 +3,7 @@ using UnityEngine;
 namespace GOcean
 {
     using static Helper;
-    using static ShaderPropertyIDs;
+    using PropIDs = ShaderPropertyIDs;
 
     public enum Resolution
     {

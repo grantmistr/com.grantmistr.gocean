@@ -11,5 +11,9 @@
       "path": "Samples~/ExampleScene"
     }
   ],
-  "author": "Grant Mistr"
+  "author": "Grant Mistr",
+  "dependencies": {
+    "com.unity.render-pipelines.high-definition": "17.0.3",
+    "com.unity.mathematics": "1.3.2"
+  }
 }

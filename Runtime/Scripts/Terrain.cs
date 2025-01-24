@@ -1,11 +1,5 @@
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
-using System.Text;
-
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace GOcean
 {
