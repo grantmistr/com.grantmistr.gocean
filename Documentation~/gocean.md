@@ -1,5 +1,5 @@
 # GOcean
-## for HDRP
+#### for HDRP
 
 GOcean is an infinite ocean rendering system for Unity HDRP.
 
