@@ -1,0 +1,15 @@
+{
+  "name": "com.cheddabunny.gocean",
+  "version": "1.0.0",
+  "displayName": "GOcean",
+  "description": "Infinite ocean system for Unity HDRP.",
+  "unity": "6000.0",
+  "samples": [
+    {
+      "displayName": "Example Scene",
+      "description": "Example scene using the ocean.",
+      "path": "Samples~/ExampleScene"
+    }
+  ],
+  "author": "Grant Mistr"
+}

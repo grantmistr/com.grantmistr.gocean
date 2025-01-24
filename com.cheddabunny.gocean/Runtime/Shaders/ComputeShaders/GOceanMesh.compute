@@ -1,0 +1,496 @@
+#pragma kernel ResetIndirectArgsBuffer
+#pragma kernel FillSubChunkBuffer
+#pragma kernel FillVertexBuffer
+#pragma kernel FillUnderwaterMaskVertices
+
+#pragma multi_compile _ UNITY_UV_STARTS_AT_TOP
+#pragma multi_compile _ HAS_TERRAIN_ON
+
+#include "../ShaderInclude/GOcean_HDRP_ShaderVariablesGlobal.hlsl"
+#include "../ShaderInclude/GOcean_Constants.hlsl"
+#include "../ShaderInclude/GOcean_HelperFunctions.hlsl"
+#include "../ShaderInclude/GOcean_TerrainHeightmapSampling.hlsl"
+#include "../ShaderInclude/GOcean_TerrainHeightmapProperties.hlsl"
+#include "../ShaderInclude/GOcean_OcclusionCulling.hlsl"
+#include "../ShaderInclude/GOcean_MeshData.hlsl"
+#include "../ShaderInclude/GOcean_TextureSamplers.hlsl"
+#include "../ShaderInclude/GOcean_CameraDepthDefines.hlsl"
+#include "../ShaderInclude/GOcean_StochasticSampling.hlsl"
+
+RWByteAddressBuffer _SubChunkBuffer;
+RWByteAddressBuffer _VertexBuffer;
+RWByteAddressBuffer _IndirectArgsBuffer;
+
+Texture2DArray<float4> _SpectrumTexture;
+SamplerState sampler_SpectrumTexture;
+
+float   _TessellationFalloff, _TessellationOffset, _DisplacementMaxDistance, _DisplacementFalloff, _CullPadding,
+        _ShoreWaveStartDepth, _HeightmapOffset, _MaxAmplitude;
+uint    _MaxTessellation, _ChunkSize, _ChunkGridResolution;
+
+// corner order : SW, SE, NE, NW // this may need to change for winding order
+//const static float2 underwaterMaskVertices[4] = { float2(-1.0, -1.0), float2(1.0, -1.0), float2(1.0, 1.0), float2(-1.0, 1.0) };
+const static float2 underwaterMaskVertices[4] = { float2(-1.0, -1.0), float2(-1.0, 1.0), float2(1.0, 1.0), float2(1.0, -1.0) };
+
+[numthreads(1, 1, 1)]
+void ResetIndirectArgsBuffer(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x > 0)
+    {
+        return;
+    }
+
+    _IndirectArgsBuffer.Store(VERT_COUNT_RW_LOCATION, 0);
+    _IndirectArgsBuffer.Store(SUB_CHUNK_COUNT_RW_LOCATION, 0);
+}
+
+float3 GetMeshDisplacedPosition(float2 position)
+{
+    float displacementDistanceSqr = DistanceSquared(position, _WorldSpaceCameraPos_Internal.xz);
+    float displacementDistance = _WaterHeight - _WorldSpaceCameraPos_Internal.y;
+    displacementDistance = sqrt(displacementDistanceSqr + displacementDistance * displacementDistance);
+    
+    float3 displacementSample;
+    displacementSample = _SpectrumTexture.SampleLevel(sampler_SpectrumTexture, float3(position / _PatchSize.x, 0.0), 0.0).xyz;
+    displacementSample += _SpectrumTexture.SampleLevel(sampler_SpectrumTexture, float3(position / _PatchSize.y, 2.0), 0.0).xyz;
+    displacementSample += _SpectrumTexture.SampleLevel(sampler_SpectrumTexture, float3(position / _PatchSize.z, 4.0), 0.0).xyz;
+    displacementSample += _SpectrumTexture.SampleLevel(sampler_SpectrumTexture, float3(position / _PatchSize.w, 6.0), 0.0).xyz;
+    float3 displacementSampleStochastic = StochasticSampleLevel(_SpectrumTexture, sampler_SpectrumTexture, position / _PatchSize.x, 8.0, 0.0).xyz;
+    float displacementTransition = saturate(displacementDistance / min(min(_ProjectionParams.z, _DisplacementMaxDistance), _PatchSize.x));
+    displacementSample = lerp(displacementSample, displacementSampleStochastic, displacementTransition * displacementTransition);
+    
+#ifdef HAS_TERRAIN_ON
+    int slice;
+    float2 terrainUV;
+    bool valid;
+    GetTerrainSamplingData(position, _TerrainSize, _TerrainPosScaledBounds, float2(0.0, 0.0), _UVMultiplier,
+    _TerrainLookupCoordOffset, _TerrainLookupResolution, _ValidTerrainHeightmapMask,
+    slice, terrainUV, valid);
+    
+    float terrainSample = _TerrainHeightmapArrayTexture.SampleLevel(sampler_TerrainHeightmapArrayTexture, float3(terrainUV, slice), 0.0).x;
+    float terrainSampleScaled = terrainSample * _TerrainSize.y;
+    float shoreWaveSample = _TerrainShoreWaveArrayTexture.SampleLevel(sampler_TerrainShoreWaveArrayTexture, float3(terrainUV, slice), 0.0).x * (float) valid;
+    float shoreWaveSampleScaled = shoreWaveSample * _ShoreWaveHeight;
+    float shoreWave = shoreWaveSampleScaled * (_WaterHeight + _HeightmapOffset - terrainSampleScaled) + max(terrainSampleScaled - _WaterHeight, 0.0) * saturate(shoreWaveSampleScaled * 3.0);
+    
+    // falloff based on terrain heightmap array
+    float terrainDisplacementFalloff = saturate((_WaterHeight - terrainSampleScaled) / _WaveDisplacementFade);
+    terrainDisplacementFalloff = valid ? terrainDisplacementFalloff : 1.0;
+    float edgeFade = saturate(displacementDistanceSqr / (_TerrainSize.x * _TerrainSize.x));
+    terrainDisplacementFalloff = saturate(terrainDisplacementFalloff + edgeFade);
+    
+    // terrain falloff
+    displacementSample *= terrainDisplacementFalloff;
+    
+    // add shore wave displacement
+    displacementSample.y += shoreWave;
+#endif    
+
+    // make mesh seamlessly match with distant water
+    displacementSample *= saturate((1.0 - displacementDistance / min(max(_ProjectionParams.z - _ChunkSize * SQRT_2, 0.001), _DisplacementMaxDistance)) * _DisplacementFalloff);
+    
+    displacementSample.x += position.x;
+    displacementSample.y += _WaterHeight;
+    displacementSample.z += position.y;
+    
+    return displacementSample;
+}
+
+float2 GetSteppedCameraPos(float2 cameraPosition, float chunkSize)
+{
+    float stepSize = chunkSize * 0.5;
+    float2 step = cameraPosition / stepSize;
+    step = floor(step) * stepSize;
+    
+    return step;
+}
+
+// no need to test far plane clipping, unless chunk size or falloff values are extreme
+bool IsChunkVisible(float3 position, float radius)
+{
+    position -= _WorldSpaceCameraPos_Internal.xyz;
+    
+    bool notVisible = false;
+    
+    for (int i = 0; i < 4; i++)
+    {
+        float4 plane = _FrustumPlanes[i];
+        
+        float distance = dot(-plane.xyz, position - (plane.xyz * -plane.w));
+        notVisible = distance > radius;
+        
+        if (notVisible)
+        {
+            break;
+        }
+    }
+    
+    return !notVisible;
+}
+
+uint2 GetChunk2DIndex(uint id)
+{
+    return uint2(id % _ChunkGridResolution, id / _ChunkGridResolution);
+}
+
+uint GetChunk1DIndex(uint2 id)
+{
+    return id.x + id.y * _ChunkGridResolution;
+}
+
+int GetChunkTessellation(uint2 id, float centerCoord)
+{
+    float tessellation = distance(float2(id), float2(centerCoord, centerCoord));
+    tessellation = max(tessellation, abs(_WorldSpaceCameraPos_Internal.y - _WaterHeight) / (float(_ChunkSize >> 1) + _MaxAmplitude * 0.25));
+    tessellation = pow(tessellation, _TessellationFalloff);
+    tessellation += _TessellationOffset;
+    
+    return max(int(_MaxTessellation) - int(tessellation), 0);
+}
+
+uint GetChunkType(uint2 id, int chunkTessellation, float centerCoord)
+{
+    uint maxIndex = _ChunkGridResolution - 1;
+    
+    uint2 iL = uint2(id.x - (id.x > 0), id.y);
+    uint2 iR = uint2(id.x + (id.x < maxIndex), id.y);
+    uint2 iD = uint2(id.x, id.y - (id.y > 0));
+    uint2 iU = uint2(id.x, id.y + (id.y < maxIndex));
+    
+    int L = GetChunkTessellation(iL, centerCoord);
+    int R = GetChunkTessellation(iR, centerCoord);
+    int D = GetChunkTessellation(iD, centerCoord);
+    int U = GetChunkTessellation(iU, centerCoord);
+    
+    L = chunkTessellation < L ? 1 : 0;
+    R = chunkTessellation < R ? 2 : 0;
+    D = chunkTessellation < D ? 4 : 0;
+    U = chunkTessellation < U ? 8 : 0;
+    
+    int chunkType = L | R | D | U;
+    
+    return chunkType;
+}
+
+float2 GetChunkPosition(float2 id, float centerCoord)
+{
+    float2 chunkPosition = id - centerCoord;
+    chunkPosition *= (float) _ChunkSize;
+    chunkPosition += _CameraPositionStepped.xy;
+    
+    return chunkPosition;
+}
+
+float2 GetSubChunkPosition(uint2 id, uint subChunkGridResolution, float2 chunkPosition)
+{
+    float centerCoord = float(subChunkGridResolution - 1) * 0.5;
+    float2 position = float2(id) - centerCoord;
+    position *= float(_ChunkSize) / float(subChunkGridResolution);
+    position += chunkPosition;
+    
+    return position;
+}
+
+float2 GetSubChunkPosition(uint2 id, uint subChunkGridResolution, float subChunkSize, float2 chunkPosition)
+{
+    float centerCoord = float(subChunkGridResolution - 1) * 0.5;
+    float2 position = float2(id) - centerCoord;
+    position *= subChunkSize;
+    position += chunkPosition;
+    
+    return position;
+}
+
+float2 GetSubChunkPosition(uint2 id, uint subChunkGridResolution)
+{
+    float centerCoord = float(subChunkGridResolution - 1) * 0.5;
+    float2 position = float2(id) - centerCoord;
+    position *= float(_ChunkSize) / float(subChunkGridResolution);
+    
+    return position;
+}
+
+uint GetSubChunkType(uint2 id, uint chunkType, uint subChunkGridResolution)
+{
+    uint maxIndex = subChunkGridResolution - 1;
+    
+    uint eL = uint(id.x == 0); // 1 0001
+    uint eR = uint(id.x == maxIndex) << 1; // 2 0010
+    uint eD = uint(id.y == 0) << 2; // 4 0100
+    uint eU = uint(id.y == maxIndex) << 3; // 8 1000
+    
+    uint subChunkType = eL | eR | eD | eU;
+    
+    subChunkType &= chunkType;
+    
+    // ----------------------
+    // Bit Masks / Chunk Type
+    // ----------------------
+    // 
+    //              UDRL
+    //
+    // Default  0   0000
+    // W        1   0001
+    // E        2   0010
+    // -        3
+    // S        4   0100
+    // SW       5   0101
+    // SE       6   0110
+    // -        7   
+    // N        8   1000
+    // NW       9   1001
+    // NE       10  1010
+    
+    return subChunkType;
+}
+
+uint GetSubChunkTessellation(uint chunkTessellation)
+{
+    return min(chunkTessellation, 3);
+}
+
+// 6 -> 8x8 5 -> 4x4 4 -> 2x2 3,2,1,0 -> 1x1
+// max tess above 6 not supported atm // TODO : support higher levels ?
+uint GetSubChunkGridResolution(int chunkTessellation)
+{
+    return 1 << max(chunkTessellation - 3, 0);
+}
+
+void EncodeSubChunkData(float2 position, uint gridResolution, uint chunkType, uint chunkTessellation, inout SubChunk subChunk)
+{
+    subChunk.position = position;
+    subChunk.data = gridResolution; // scale factor (curr max supported tess level 6, so max 8 [1 << (max_supported - 3)])
+    subChunk.data <<= 4;
+    subChunk.data |= chunkType; // type
+    subChunk.data <<= 4;
+    subChunk.data |= chunkTessellation; // tessellation (max: 3 -> 2^3 -> 8x8)
+}
+
+void CalculateSubChunkData(uint3 id, float2 chunkPosition, uint chunkType, int chunkTessellation, uint subChunkGridResolution, inout SubChunk subChunk)
+{
+    EncodeSubChunkData(
+        GetSubChunkPosition(id.xy, subChunkGridResolution, chunkPosition),
+        subChunkGridResolution,
+        GetSubChunkType(id.xy, chunkType, subChunkGridResolution),
+        GetSubChunkTessellation(chunkTessellation),
+        subChunk);
+}
+
+// dispatch size = 1, 1, chunkGridRes * chunkGridRes
+// each chunk pushes up to 8x8 subchunks
+// chunk will push more than 1 subchunk if tess level exceeds 3
+[numthreads(8, 8, 1)]
+void FillSubChunkBuffer(uint3 id : SV_DispatchThreadID)
+{
+    float centerCoord = float(_ChunkGridResolution - 1) * 0.5;
+    uint2 chunk2DIndex = GetChunk2DIndex(id.z);
+    
+    float2 chunkPosition = GetChunkPosition(chunk2DIndex, centerCoord); // relative
+    int chunkTessellation = GetChunkTessellation(chunk2DIndex, centerCoord);
+    
+    uint subChunkGridResolution = GetSubChunkGridResolution(chunkTessellation);
+    
+    if (id.x >= subChunkGridResolution || id.y >= subChunkGridResolution)
+    {
+        return;
+    }
+    
+    float subChunkSize = (float) _ChunkSize / (float) subChunkGridResolution;
+    float2 subChunkPosition = GetSubChunkPosition(id.xy, subChunkGridResolution, subChunkSize, chunkPosition);
+    float3 displacedSubChunkPosition = GetMeshDisplacedPosition(subChunkPosition);
+    
+    if (!IsChunkVisible(displacedSubChunkPosition, subChunkSize * SQRT_2 + _CullPadding))
+    {
+        return;
+    }
+    
+    uint chunkType = GetChunkType(chunk2DIndex, chunkTessellation, centerCoord);
+    uint subChunkType = GetSubChunkType(id.xy, chunkType, subChunkGridResolution);
+    uint subChunkTessellation = GetSubChunkTessellation(chunkTessellation);
+    
+    SubChunk subChunk;
+    EncodeSubChunkData(subChunkPosition, subChunkGridResolution, subChunkType, subChunkTessellation, subChunk);
+    //CalculateSubChunkData(id, chunkPosition, chunkType, chunkTessellation, subChunkGridResolution, subChunk);
+    uint3 storeData = uint3(subChunk.data, asuint(subChunk.position));
+    
+    uint bufferIndex;
+    _IndirectArgsBuffer.InterlockedAdd(SUB_CHUNK_COUNT_RW_LOCATION, 1, bufferIndex);
+    _SubChunkBuffer.Store3(bufferIndex * SUBCHUNK_SIZE_BYTE, storeData);
+    // can instead write multiple copies of subchunk to triangle buffer?
+    // TODO : since subchunk is smaller than mesh chunk, write sub chunks to tri buffer with meshchunk size offset
+    // problem : different mesh chunk types have different tri counts. Could write all of the subchunk's mesh patches
+    // instead of subchunks?
+    // can then consume them in fill tris kernel
+}
+
+float2 GetMeshPatchPosition(uint2 id, uint meshPatchGridResolution, float meshPatchWidth, float2 subChunkPosition)
+{
+    float centerCoord = float(meshPatchGridResolution - 1) * 0.5;
+    float2 position = float2(id) - centerCoord;
+    position *= meshPatchWidth;
+    position += subChunkPosition;
+    
+    return position;
+}
+
+uint GetMeshPatchType(uint2 id, uint subChunkType, uint meshPatchGridResolution)
+{
+    return GetSubChunkType(id, subChunkType, meshPatchGridResolution);
+}
+
+bool IsEdgeChunk(float2 position, float radius)
+{
+    float d = distance(position, _WorldSpaceCameraPos_Internal.xz);
+    return d >= _DisplacementMaxDistance - radius;
+}
+
+// is this even worth it
+bool IsZeroAreaTriangle(Vertex vertices[3])
+{
+    float3 delta0 = vertices[1].position - vertices[0].position;
+    float3 delta1 = vertices[2].position - vertices[0].position;
+    
+    // calc triangle normal
+    float3 normal = normalize(cross(delta0, delta1));
+    
+    float3 averagePosition = (vertices[0].position + vertices[1].position + vertices[2].position) / 3.0;
+    
+    // view dir
+    float3 V = normalize(averagePosition - _WorldSpaceCameraPos_Internal.xyz);
+    
+    // true if view direction and triangle normal are perpendicular
+    return (abs(dot(normal, V)) < 0.0005);
+}
+
+// dispatch with indirect dispatch args buffer (1, 1, subChunkCount from append buffer)
+[numthreads(8, 8, 1)]
+void FillVertexBuffer(uint3 id : SV_DispatchThreadID)
+{
+    uint3 subChunkData = _SubChunkBuffer.Load3(id.z * SUBCHUNK_SIZE_BYTE);
+    
+    SubChunk subChunk;
+    subChunk.data = subChunkData.x;
+    subChunk.position = asfloat(subChunkData.yz);
+    
+    uint tessellation = subChunk.data & 0xF;
+    uint type = (subChunk.data >> 4) & 0xF;
+    uint scaleFactor = subChunk.data >> 8;
+    
+    uint meshPatchGridResolution = 1 << tessellation;
+    
+    // TODO : instead of early returning threads, make them process other subchunks ?
+    if (id.x >= meshPatchGridResolution || id.y >= meshPatchGridResolution)
+    {
+        return;
+    }
+
+    float meshPatchWidth = float(_ChunkSize) / float(scaleFactor * meshPatchGridResolution);
+    float2 meshPatchPosition = GetMeshPatchPosition(id.xy, meshPatchGridResolution, meshPatchWidth, subChunk.position);
+    float3 displacedMeshPatchPosition = GetMeshDisplacedPosition(meshPatchPosition);
+    
+    bool inFrustum = IsChunkVisible(displacedMeshPatchPosition, meshPatchWidth * SQRT_2 + _CullPadding);
+    //bool occlusionQuery = OcclusionQuery(displacedMeshPatchPosition, meshPatchWidth * SQRT_2 + _CullPadding);
+    
+    // don't think depth occlusion can work bc of the way unity generates mips for depth texture
+    // unless im dumb
+    if (!inFrustum /* || occlusionQuery */)
+    {
+        return;
+    }
+    
+    uint meshPatchType = GetMeshPatchType(id.xy, type, meshPatchGridResolution);
+    float meshPatchHalfWidth = meshPatchWidth * 0.5;
+    
+    MeshChunk meshChunk = meshChunkArray[meshPatchType];
+    Vertex transformedVertices[MESH_CHUNK_MAX_VERTICES];
+    
+    uint i;
+    
+    // displace and scale all the verts of the meshchunk first
+    [loop]
+    for (i = 0; i < meshChunk.vertexCount; i++)
+    {
+        transformedVertices[i].preDisplacedPositionXZ = meshChunk.vertices[i] * meshPatchHalfWidth + meshPatchPosition;
+        transformedVertices[i].position = GetMeshDisplacedPosition(transformedVertices[i].preDisplacedPositionXZ);
+    }
+    
+    Triangle triangles[MESH_CHUNK_MAX_TRIANGLES];
+    uint appendTriangleCount = 0;
+    
+    // filter out flat / zero area triangles
+    [loop]
+    for (i = 0; i < meshChunk.triangleCount; i++)
+    {
+        Vertex triangleVertices[3];
+        
+        [unroll(3)]
+        for (uint j = 0; j < 3; j++)
+        {
+            uint vertexIndex = meshChunk.indices[i * 3 + j];
+            triangleVertices[j] = transformedVertices[vertexIndex];
+        }
+        
+        if (IsZeroAreaTriangle(triangleVertices))
+        {
+            continue;
+        }
+        
+        triangles[appendTriangleCount].vertices = triangleVertices;
+        appendTriangleCount++;
+    }
+    
+    uint bufferIndex;
+    // add num verts (tri count * 3)
+    _IndirectArgsBuffer.InterlockedAdd(VERT_COUNT_RW_LOCATION, appendTriangleCount * 3, bufferIndex);
+    
+    // write vertices to vertex buffer
+    [loop]
+    for (i = 0; i < appendTriangleCount; i++)
+    {
+        uint writeAddress = UNDERWATER_MASK_VERTEX_COUNT * VERTEX_SIZE_BYTE + bufferIndex * VERTEX_SIZE_BYTE + i * TRIANGLE_SIZE_BYTE;
+        
+        [unroll(3)]
+        for (uint j = 0; j < 3; j++)
+        {
+            float2 vertex = triangles[i].vertices[j].preDisplacedPositionXZ;
+            float3 displacedVertex = triangles[i].vertices[j].position;
+            _VertexBuffer.Store2(writeAddress + j * VERTEX_SIZE_BYTE, asuint(vertex));
+            _VertexBuffer.Store3(writeAddress + j * VERTEX_SIZE_BYTE + VERTEX_PREDISPLACED_POSITION_XZ_SIZE_BYTE, asuint(displacedVertex));
+        }
+    }
+}
+
+// Maybe try to do this in vertex shader?
+[numthreads(4, 1, 1)]
+void FillUnderwaterMaskVertices(uint3 id : SV_GroupThreadID)
+{
+    if (id.x > 3)
+    {
+        return;
+    }
+    
+    float scale = (float) (_ChunkGridResolution * _ChunkSize) * 0.5;
+    scale = min(scale, _ProjectionParams.z * 0.4);
+    uint vertCount = _IndirectArgsBuffer.Load(VERT_COUNT_RW_LOCATION);
+    uint writeAddress = id.x * TRIANGLE_SIZE_BYTE;
+    
+    [unroll(2)]
+    for (uint i = 0; i < 2; i++)
+    {
+        float2 preDisplacedVertex = underwaterMaskVertices[(id.x + i) % 4] * scale + _WorldSpaceCameraPos_Internal.xz;
+        float3 vertex = float3(preDisplacedVertex.x, _WaterHeight, preDisplacedVertex.y);
+        _VertexBuffer.Store3(writeAddress + VERTEX_SIZE_BYTE * i + VERTEX_PREDISPLACED_POSITION_XZ_SIZE_BYTE, asuint(vertex));
+    }
+        
+    {
+        float3 vertex = float3(_WorldSpaceCameraPos_Internal.x, _WaterHeight - _MaxAmplitude * 2.0, _WorldSpaceCameraPos_Internal.z);
+        _VertexBuffer.Store3(writeAddress + VERTEX_SIZE_BYTE * 2 + VERTEX_PREDISPLACED_POSITION_XZ_SIZE_BYTE, asuint(vertex));
+    }
+    
+    if (id.x > 0)
+    {
+        return;
+    }
+    
+    _IndirectArgsBuffer.Store(TOTAL_VERT_COUNT_RW_LOCATION, vertCount + UNDERWATER_MASK_VERTEX_COUNT); // pushed 4 tris (12 verts)
+}

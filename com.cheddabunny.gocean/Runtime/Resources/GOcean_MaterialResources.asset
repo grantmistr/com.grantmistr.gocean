@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89709ce92f14d1849b57f9c4b814a1e4, type: 3}
+  m_Name: GOcean_MaterialResources
+  m_EditorClassIdentifier: 
+  oceanM: {fileID: 2100000, guid: b362bfa2ee94d6540b0ff690f6eb5ecc, type: 2}
+  distantOceanM: {fileID: 2100000, guid: eb5e4d8c1b7358f479a8c719cc54c627, type: 2}
+  fullscreenM: {fileID: 2100000, guid: 28d34cd76272cae4cbc5b5cceab4d45f, type: 2}
+  waterScreenMaskM: {fileID: 2100000, guid: c8496e88b5bb38948baa666969ca4567, type: 2}
+  wireframeM: {fileID: 2100000, guid: 5158de3b72252074fa4b3ffe3ca5c9d3, type: 2}

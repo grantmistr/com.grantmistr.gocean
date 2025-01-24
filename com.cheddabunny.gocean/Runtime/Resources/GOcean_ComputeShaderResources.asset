@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21dc67342408acd45a4f24135d8dc3bc, type: 3}
+  m_Name: GOcean_ComputeShaderResources
+  m_EditorClassIdentifier: 
+  spectrumCS: {fileID: 7200000, guid: 6b94a8e5e61958442bdf31a193a66cde, type: 3}
+  terrainCS: {fileID: 7200000, guid: 6812a04cf96de9846a8f7825a3a6fd44, type: 3}
+  underwaterCS: {fileID: 7200000, guid: b1cfb52886de3714492b0889f5913545, type: 3}
+  meshCS: {fileID: 7200000, guid: efcb212768be1a84693030a45e229b5d, type: 3}

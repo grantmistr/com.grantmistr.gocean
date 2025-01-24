@@ -1,0 +1,99 @@
+#pragma kernel GetMinMax
+#pragma kernel FillTexture
+#pragma kernel FillTextureArray
+#pragma kernel GenerateRandomNoise
+
+#include "../../../Shaders/ShaderInclude/GOcean_HelperFunctions.hlsl"
+
+RWTexture2D<float4> _Texture2D;
+RWTexture2D<float4> _RandomNoiseTexture;
+RWTexture2DArray<float4> _Texture2DArray;
+
+RWBuffer<float4> _MinBuffer;
+RWBuffer<float4> _MaxBuffer;
+
+float4 _FillColor;
+
+uint _RandomNoiseTextureResolution, _RandomSeed;
+
+// fill 2 buffers of length texture width with float4s where each component
+// of the float4 is the min / max value of each component of the pixels in
+// that column 
+[numthreads(64, 1, 1)]
+void GetMinMax(uint3 id : SV_DispatchThreadID)
+{
+    uint tID = id.x;
+    
+    uint2 dim;
+    _Texture2D.GetDimensions(dim.x, dim.y);
+    
+    if (tID >= dim.x)
+    {
+        return;
+    }
+    
+    uint i, j;
+    float4 s = _Texture2D[uint2(tID, 0)];
+    float4 min = s;
+    float4 max = s;
+    
+    for (i = 1; i < dim.y; i++)
+    {
+        s = _Texture2D[uint2(tID, i)];
+        
+        [unroll]
+        for (j = 0; j < 4; j++)
+        {
+            min[j] = s[j] < min[j] ? s[j] : min[j];
+            max[j] = s[j] > max[j] ? s[j] : max[j];
+        }
+    }
+    
+    _MinBuffer[tID] = min;
+    _MaxBuffer[tID] = max;
+}
+
+[numthreads(8, 8, 1)]
+void FillTexture(uint3 id : SV_DispatchThreadID)
+{
+    uint2 dim;
+    _Texture2D.GetDimensions(dim.x, dim.y);
+    
+    if (id.x >= dim.x || id.y > dim.y)
+    {
+        return;
+    }
+
+    _Texture2D[id.xy] = _FillColor;
+}
+
+[numthreads(8, 8, 1)]
+void FillTextureArray(uint3 id : SV_DispatchThreadID)
+{
+    uint3 dim;
+    _Texture2DArray.GetDimensions(dim.x, dim.y, dim.z);
+    
+    if (id.x >= dim.x || id.y > dim.y)
+    {
+        return;
+    }
+
+    _Texture2DArray[id] = _FillColor;
+}
+
+[numthreads(8, 8, 1)]
+void GenerateRandomNoise(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _RandomNoiseTextureResolution || id.y >= _RandomNoiseTextureResolution)
+    {
+        return;
+    }
+    
+    uint randomSeed = (id.x + id.y * _RandomNoiseTextureResolution + id.z * _RandomNoiseTextureResolution * _RandomNoiseTextureResolution) * 4;
+    randomSeed = wang_hash(randomSeed * (_RandomSeed == 0 ? wang_hash(_RandomSeed) : _RandomSeed));
+    
+    uint4 randomUInt = uint4(wang_hash(randomSeed), wang_hash(randomSeed + 1), wang_hash(randomSeed + 2), wang_hash(randomSeed + 3)) & uint(0x7FFFFFFF);
+    float4 randomValue = (float4(randomUInt) / float(0x7FFFFFFF));// * TAU; // 4 values 0-TAU
+    
+    _RandomNoiseTexture[id.xy] = randomValue;
+}

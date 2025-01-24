@@ -1,0 +1,381 @@
+﻿#pragma kernel InitialFill
+#pragma kernel UpdateInitialSpectrum
+#pragma kernel UpdateInitialSpectrumConjugate
+#pragma kernel UpdateSpectrum
+#pragma kernel IFFT
+#pragma kernel AssembleMaps
+#pragma kernel SurfaceData
+#pragma kernel MergeSurfaceData
+#pragma kernel CalculateSpectrumMaxAmplitude
+
+#pragma multi_compile _ RESOLUTION_128 RESOLUTION_256 RESOLUTION_512 RESOLUTION_1024
+
+#include "../ShaderInclude/GOcean_Constants.hlsl"
+#include "../ShaderInclude/GOcean_HDRP_ShaderVariablesGlobal.hlsl"
+#include "../ShaderInclude/GOcean_HelperFunctions.hlsl"
+#include "../ShaderInclude/GOcean_SpectrumSampling.hlsl"
+
+#if     defined(RESOLUTION_128)
+#define SIZE 128
+#define LOG_SIZE 7
+#elif   defined(RESOLUTION_256)
+#define SIZE 256
+#define LOG_SIZE 8
+#elif   defined(RESOLUTION_512)
+#define SIZE 512
+#define LOG_SIZE 9
+#elif   defined(RESOLUTION_1024)
+#define SIZE 1024
+#define LOG_SIZE 10
+#else
+#define SIZE 256
+#define LOG_SIZE 8
+#endif
+
+#define EPSILON 0.0000001
+#define SPECTRUM_COUNT 4
+
+#define THREADS_MAIN_X 8
+#define THREADS_MAIN_Y 8
+#define THREADS_MAIN_Z 1
+
+RWTexture2DArray<float4> _SpectrumTexture;
+Texture2D<float4> _RandomNoiseTexture;
+
+float4  _PatchHighestWaveCount, _PatchLowestWaveCount, _PatchFoamBias, _PatchScaleRatios;
+float   _WindTighten, _Amplitude, _Steepness, _Speed, _LowWaveCutoff, _HighWaveCutoff, _Gravity,
+        _NormalStrength, _HighFrequencyNormalStrength, _FoamDecayRate, _FoamCutoff, _FoamBias, _FoamAccumulationRate,
+        _TimeMultiplier;
+
+uint    _RandomNoiseTextureResolution, _IFFTDirection;
+
+float4  _PatchSize_;
+uint    _SpectrumTextureResolution_;
+
+float2 ComplexMultiply(float2 c0, float2 c1)
+{
+    float2 c;
+    c.x = c0.x * c1.x - c0.y * c1.y;
+    c.y = c0.x * c1.y + c0.y * c1.x;
+    
+    return c;
+}
+
+float2 ComplexAdd(float2 c0, float2 c1)
+{
+    float2 c;
+    c.x = c0.x + c1.x;
+    c.y = c0.y + c1.y;
+    
+    return c;
+}
+
+[numthreads(THREADS_MAIN_X, THREADS_MAIN_Y, THREADS_MAIN_Z)]
+void InitialFill(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _SpectrumTextureResolution_ || id.y >= _SpectrumTextureResolution_)
+    {
+        return;
+    }
+    
+    _SpectrumTexture[id] = float4(0.0, 0.0, 0.0, 0.0);
+}
+
+[numthreads(THREADS_MAIN_X, THREADS_MAIN_Y, THREADS_MAIN_Z)]
+void UpdateInitialSpectrum(uint3 id : SV_DispatchThreadID)
+{
+    uint2 coord = id.xy % _RandomNoiseTextureResolution;
+    float p = Phillips(id, _SpectrumTextureResolution, _PatchSize, _PatchLowestWaveCount, _PatchHighestWaveCount, _Amplitude, _Gravity, _WindDirection, _WindSpeed, _Turbulence);
+    float2 n = float2(_RandomNoiseTexture[coord][(id.z << 1) % 4], _RandomNoiseTexture[coord][((id.z << 1) % 4) + 1]);
+    n = (2.0 * n - 1.0) * PI; // (-PI , PI)
+
+    float4 initialSpectrum = float4(n * p, 0.0, 0.0);
+
+    _SpectrumTexture[uint3(id.xy, id.z << 1)] = initialSpectrum;
+}
+
+[numthreads(THREADS_MAIN_X, THREADS_MAIN_Y, THREADS_MAIN_Z)]
+void UpdateInitialSpectrumConjugate(uint3 id : SV_DispatchThreadID)
+{
+    uint3 targetID = uint3(id.xy, id.z << 1);
+    
+    float2 h0 = _SpectrumTexture[targetID].xy;
+    uint3 conjugateIndex = uint3((_SpectrumTextureResolution - id.x) % _SpectrumTextureResolution, (_SpectrumTextureResolution - id.y) % _SpectrumTextureResolution, id.z << 1);
+    float2 conjugate = _SpectrumTexture[conjugateIndex].xy;
+    
+    _SpectrumTexture[targetID] = float4(h0, conjugate.x, -conjugate.y);
+}
+
+[numthreads(THREADS_MAIN_X, THREADS_MAIN_Y, THREADS_MAIN_Z)]
+void UpdateSpectrum(uint3 id : SV_DispatchThreadID)
+{
+    float2 gridPoint = float2(id.xy) - float(_SpectrumTextureResolution >> 1);
+    float2 waveVector = gridPoint * TAU / _PatchSize[id.z];
+    float waveCount = length(waveVector);
+            
+    if (waveCount < _PatchLowestWaveCount[id.z] || waveCount > _PatchHighestWaveCount[id.z])
+    {
+        _SpectrumTexture[uint3(id.xy, id.z << 1)] = float4(0.0, 0.0, 0.0, 0.0);
+    }
+    else
+    {
+        float oneOverWaveCount = 1.0 / waveCount;
+        float waveCountRcp = rcp(waveCount);
+        
+        float frequency = Dispersion(waveCount, _Gravity);
+        frequency *= _Time.y * _Speed;
+        
+        float s, c;
+        sincos(frequency, s, c);
+        float2 exponent = float2(c, s);
+        float2 exponentInv = float2(c, -s);
+
+        float4 h0 = _SpectrumTexture[uint3(id.xy, id.z << 1)];
+        float2 ht = ComplexMultiply(h0.xy, exponent) + ComplexMultiply(h0.zw, exponentInv);
+        float2 ih = float2(-ht.y, ht.x);
+
+        float steepness = saturate(waveCount / (1.001 - _Steepness));
+        
+        float2 displacementX = steepness * ih * waveVector.x * waveCountRcp;
+        float2 displacementY = ht;
+        float2 displacementZ = steepness * ih * waveVector.y * waveCountRcp;
+
+        float2 displacementZ_dx = steepness * -ht * waveVector.x * waveVector.y * waveCountRcp;
+
+        float2 hDisplacementX = float2(displacementX.x - displacementZ.y, displacementX.y + displacementZ.x);
+        float2 hDisplacementZ = float2(displacementY.x - displacementZ_dx.y, displacementY.y + displacementZ_dx.x);
+        
+        _SpectrumTexture[uint3(id.xy, id.z << 1)] = float4(hDisplacementX, hDisplacementZ);
+    }
+}
+
+groupshared float4 _IFFTBufferGS[2][SIZE];
+
+void ButterflyValues(uint step, uint index, out uint2 indices, out float2 twiddle)
+{
+    uint b = _SpectrumTextureResolution >> (step + 1);
+    uint w = b * (index / b);
+    uint i = (w + index) % _SpectrumTextureResolution;
+    sincos(-TAU / _SpectrumTextureResolution * w, twiddle.y, twiddle.x);
+
+    twiddle.y = -twiddle.y;
+    indices = uint2(i, i + b);
+}
+
+float4 DoIFFT(uint threadIndex, float4 input)
+{
+    _IFFTBufferGS[0][threadIndex] = input;
+    GroupMemoryBarrierWithGroupSync();
+    bool flag = false;
+
+    [unroll]
+    for (uint step = 0; step < LOG_SIZE; ++step)
+    {
+        uint2 inputsIndices;
+        float2 twiddle;
+        ButterflyValues(step, threadIndex, inputsIndices, twiddle);
+
+        float4 v = _IFFTBufferGS[flag][inputsIndices.y];
+        _IFFTBufferGS[!flag][threadIndex] = _IFFTBufferGS[flag][inputsIndices.x] + float4(ComplexMultiply(twiddle, v.xy), ComplexMultiply(twiddle, v.zw));
+
+        flag = !flag;
+        GroupMemoryBarrierWithGroupSync();
+    }
+
+    return _IFFTBufferGS[flag][threadIndex];
+}
+
+[numthreads(SIZE, 1, 1)] // dispatch: 1 group x, SIZE groups y
+void IFFT(uint3 id : SV_DispatchThreadID)
+{
+    uint3 targetIndex = uint3(_IFFTDirection ? id.xy : id.yx, id.z << 1);
+    
+    _SpectrumTexture[targetIndex] = DoIFFT(id.x, _SpectrumTexture[targetIndex]);
+}
+
+float4 Permute(float4 data, float2 id)
+{
+    return data * (1.0 - 2.0 * ((id.x + id.y) % 2));
+}
+
+float Permute(float data, float2 id)
+{
+    return data * (1.0 - 2.0 * ((id.x + id.y) % 2));
+}
+
+[numthreads(THREADS_MAIN_X, THREADS_MAIN_Y, THREADS_MAIN_Z)]
+void AssembleMaps(uint3 id : SV_DispatchThreadID)
+{
+    uint3 index = uint3(id.xy, id.z << 1);
+    
+    float4 hDisplacement = Permute(_SpectrumTexture[index], id.xy);
+    float3 displacement = float3(hDisplacement.x, hDisplacement.z, hDisplacement.y);
+    
+    _SpectrumTexture[index] = float4(displacement, 1.0);
+}
+
+uint4x2 GetOffsetCoords(uint2 id) // L R D U
+{
+    uint4x2 o;
+    
+    o[0] = uint2(id.x == 0 ? _SpectrumTextureResolution - 1 : id.x - 1, id.y);
+    o[1] = uint2(id.x == _SpectrumTextureResolution - 1 ? 0 : id.x + 1, id.y);
+    o[2] = uint2(id.x, id.y == 0 ? _SpectrumTextureResolution - 1 : id.y - 1);
+    o[3] = uint2(id.x, id.y == _SpectrumTextureResolution - 1 ? 0 : id.y + 1);
+
+    return o;
+}
+
+uint4x2 GetOffsetCoords(uint2 id, uint offset) // L R D U
+{
+    uint4x2 o;
+    
+    uint resMinusOffset = _SpectrumTextureResolution - offset;
+    
+    o[0] = uint2(id.x < offset ? id.x + resMinusOffset : id.x - offset, id.y);
+    o[1] = uint2(id.x >= resMinusOffset ? id.x - resMinusOffset : id.x + offset, id.y);
+    o[2] = uint2(id.x, id.y < offset ? id.y + resMinusOffset : id.y - offset);
+    o[3] = uint2(id.x, id.y >= resMinusOffset ? id.y + resMinusOffset : id.y - offset);
+    
+    return o;
+}
+
+// https://github.com/achalpandeyy/OceanFFT/blob/master/Source/Shaders/CS_NormalMap.comp
+float3 ComputeNormal(float3 C, float3 L, float3 R, float3 D, float3 U, float texelSize)
+{
+    L = float3(L.x - texelSize, L.yz) - C;
+    R = float3(R.x + texelSize, R.yz) - C;
+    D = float3(D.xy, D.z - texelSize) - C;
+    U = float3(U.xy, U.z + texelSize) - C;
+    
+    float3 DL = cross(L, D);
+    float3 DR = cross(D, R);
+    float3 UL = cross(U, L);
+    float3 UR = cross(R, U);
+    
+    float3 normal = DL + DR + UL + UR;
+    normal.xz *= _NormalStrength;
+    return normalize(-normal);
+}
+
+[numthreads(THREADS_MAIN_X, THREADS_MAIN_Y, THREADS_MAIN_Z)]
+void SurfaceData(uint3 id : SV_DispatchThreadID)
+{
+    float4 worldTexelSize = _PatchSize / (float) _SpectrumTextureResolution;
+    
+    uint3 index0 = uint3(id.xy, id.z << 1);
+    uint3 index1 = uint3(id.xy, index0.z + 1);
+
+    uint4x2 offsetCoords = GetOffsetCoords(id.xy);
+    
+    float4 displacement = _SpectrumTexture[index0];
+    float4 L = _SpectrumTexture[uint3(offsetCoords[0], index0.z)];
+    float4 R = _SpectrumTexture[uint3(offsetCoords[1], index0.z)];
+    float4 D = _SpectrumTexture[uint3(offsetCoords[2], index0.z)];
+    float4 U = _SpectrumTexture[uint3(offsetCoords[3], index0.z)];
+    
+    float3 normal = ComputeNormal(displacement.xyz, L.xyz, R.xyz, D.xyz, U.xyz, worldTexelSize[id.z]);
+    float foamMask = ((L.x - R.x) + (D.z - U.z)) / worldTexelSize[id.z] + _FoamBias;
+    foamMask = saturate(foamMask);
+    
+    float prevFrameFoamMask = _SpectrumTexture[uint3(id.xy / (uint) _PatchScaleRatios[id.z], 9)].w;
+    float foam = _SpectrumTexture[index1].w;
+    
+    float adjacentFoam = _SpectrumTexture[uint3(offsetCoords[0], index1.z)].w;
+    adjacentFoam += _SpectrumTexture[uint3(offsetCoords[1], index1.z)].w;
+    adjacentFoam += _SpectrumTexture[uint3(offsetCoords[2], index1.z)].w;
+    adjacentFoam += _SpectrumTexture[uint3(offsetCoords[3], index1.z)].w;
+    
+    float adjacentFoamContribution = 1.0 - foam;
+    adjacentFoamContribution *= adjacentFoamContribution;
+    foam += adjacentFoam * 0.25 * adjacentFoamContribution;
+    foam /= 1.0 + adjacentFoamContribution;
+    
+    foam += _FoamAccumulationRate * unity_DeltaTime.x * foamMask;
+    //foam *= exp(-_FoamDecayRate * unity_DeltaTime.x);
+    foam *= saturate(1.0 - unity_DeltaTime.x * _FoamDecayRate);
+    foam = saturate(foam);
+
+    float thickness = ((L.x - R.x) + (D.z - U.z) + 1.0);
+    
+    //_SpectrumTexture[index0] = float4(displacement.xyz, foamMask);
+    _SpectrumTexture[index1] = float4(normal.xz, thickness, foam);
+}
+
+[numthreads(THREADS_MAIN_X, THREADS_MAIN_Y, THREADS_MAIN_Z)]
+void MergeSurfaceData(uint3 id : SV_DispatchThreadID)
+{
+    uint3 c0 = uint3(id.xy, 0);
+    uint3 c1 = uint3(fmod((float2) id.xy * _PatchScaleRatios.y, (float) _SpectrumTextureResolution), 2);
+    uint3 c2 = uint3(fmod((float2) id.xy * _PatchScaleRatios.z, (float) _SpectrumTextureResolution), 4);
+    uint3 c3 = uint3(fmod((float2) id.xy * _PatchScaleRatios.w, (float) _SpectrumTextureResolution), 6);
+    
+    float4 s0 = _SpectrumTexture[c0];
+    float4 s1 = _SpectrumTexture[c1];
+    float4 s2 = _SpectrumTexture[c2];
+    float4 s3 = _SpectrumTexture[c3];
+    
+    float3 displacement = s0.xyz + s1.xyz + s2.xyz + s3.xyz;
+    
+    c0.z = 1;
+    c1.z = 3;
+    c2.z = 5;
+    c3.z = 7;
+    
+    s0 = _SpectrumTexture[c0];
+    s1 = _SpectrumTexture[c1];
+    s2 = _SpectrumTexture[c2];
+    s3 = _SpectrumTexture[c3];
+    
+    float4 normalFoamSum = s0 + s1 + s2 + s3;
+    
+    _SpectrumTexture[uint3(c0.xy, 8)] = float4(displacement, 1.0);
+    _SpectrumTexture[uint3(c0.xy, 9)] = normalFoamSum;
+}
+
+RWByteAddressBuffer _SpectrumMaxAmplitudeBuffer; // length: SPECTRUM_COUNT + 1
+groupshared float _SpectrumMaxAmplitudeBufferGS[SIZE];
+
+[numthreads(SIZE, 1, 1)]
+void CalculateSpectrumMaxAmplitude(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
+{
+    if (groupThreadID.x >= _SpectrumTextureResolution_ || groupID.z >= SPECTRUM_COUNT)
+    {
+        return;
+    }
+    
+    float sum = 0.0;
+    
+    uint i;
+    for (i = 0; i < _SpectrumTextureResolution_; i++)
+    {
+        uint3 index = uint3(groupThreadID.x, i, groupID.z);
+        
+        float2 gridPoint = float2(index.xy) - float(_SpectrumTextureResolution_ >> 1);
+        float2 waveVector = (gridPoint * TAU) / _PatchSize_[index.z];
+        float frequency = length(waveVector);
+
+        float p = Phillips(frequency, _Amplitude, _Gravity, 100000.0);
+    
+        sum += (frequency < _PatchLowestWaveCount[index.z] || frequency > _PatchHighestWaveCount[index.z]) ? 0.0 : p;
+    }
+    
+    _SpectrumMaxAmplitudeBufferGS[groupThreadID.x] = sum;
+    
+    if (groupThreadID.x != 0)
+    {
+        return;
+    }
+    
+    GroupMemoryBarrier();
+    
+    for (i = 0; i < _SpectrumTextureResolution_; i++)
+    {
+        sum += _SpectrumMaxAmplitudeBufferGS[i];
+    }
+    
+    _SpectrumMaxAmplitudeBuffer.Store(groupID.z * 4, asuint(sum * 0.5));
+    
+    uint v;
+    _SpectrumMaxAmplitudeBuffer.InterlockedAdd(SPECTRUM_COUNT * 4, 1, v);
+}

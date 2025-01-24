@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 68724290086463645a4cb29c1d376ace
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - parametersUser: {fileID: 11400000, guid: 7751aa3b0aa667d43a65a16911deb25d, type: 2}
+  - oceanM: {fileID: 2100000, guid: e230e652a50ab644b8e697c8bbc78c80, type: 2}
+  - distantOceanM: {fileID: 2100000, guid: 66cf249d43178264aa56cdbbb2456779, type: 2}
+  - fullscreenM: {fileID: 2100000, guid: c403f4291831c334ea53b22766d607f7, type: 2}
+  - waterScreenMaskM: {fileID: 2100000, guid: 071ff00f3aeee2342933e5a6053a55f8, type: 2}
+  - wireframeM: {fileID: 2100000, guid: f68a7cb474d5e71449b86899288ed3ab, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,0 +1,443 @@
+#pragma kernel InitialFill
+#pragma kernel CopyDirectionalInfluence
+#pragma kernel DirectionalInfluence
+#pragma kernel ComputeShoreWaves
+#pragma kernel UpdateTexturesCopyFoam
+#pragma kernel UpdateTexturesResetFoam
+
+#include "../ShaderInclude/GOcean_HDRP_ShaderVariablesGlobal.hlsl"
+#include "../ShaderInclude/GOcean_Constants.hlsl"
+#include "../ShaderInclude/GOcean_HelperFunctions.hlsl"
+#include "../ShaderInclude/GOcean_TerrainHeightmapSampling.hlsl"
+#include "../ShaderInclude/GOcean_TextureSamplers.hlsl"
+
+#define MAIN_THREADS_X 8
+#define MAIN_THREADS_Y 8
+#define MAIN_THREADS_Z 1
+
+#define DIRECTIONAL_INFLUENCE_THREADS_X 64
+#define DIRECTIONAL_INFLUENCE_THREADS_Y 1
+#define DIRECTIONAL_INFLUENCE_THREADS_Z 1
+
+#define EPSILON 1.19209290e-7
+
+RWTexture2DArray<float4> _TerrainShoreWaveArrayTexture;
+RWTexture2DArray<float> _TerrainHeightmapArrayTexture;
+Texture2D<float> _TerrainHeightmapTexture;
+Texture2D _RandomNoiseTexture;
+
+RWBuffer<float4> _DirectionalInfluenceBuffer; // can use length of vector to store progress i think
+Buffer<int> _TargetSliceIndicesBuffer;
+
+groupshared float4 GS_DirectionalInfluenceBuffer[DIRECTIONAL_INFLUENCE_THREADS_X];
+
+uint    _Slice, _SourceSlice, _SliceUpdateCount, _TerrainHeightmapResolution, _TerrainLookupResolution, _ShoreWaveCount;
+
+int2    _Slice2DOffsetDirection;
+
+float4  _TerrainPosScaledBounds;
+float3  _TerrainSize;
+float   _HeightmapOffset, _ShoreWaveStartDepth, _ShoreWaveFalloff, _ShoreWaveHeight, _ShoreWaveSpeed,
+        _ShoreWaveNoiseStrength, _ShoreWaveNoiseScale, _ShoreWaveNormalStrength, _WetnessEdgeHardness, _WetnessFadeSpeed, _DirectionalInfluenceStrength,
+        _FoamAccumulationRate, _FoamDecayRate;
+
+const static uint directionSampleOffset = 4;
+const static float waveProgressLoopTime = 3.0;
+
+float2 CalculateWaveDirection(uint2 id, uint resolution, Texture2D heightmapTexture, float heightmapSample)
+{
+    bool flipV = id.y >= resolution - directionSampleOffset;
+    uint2 coordV = uint2(id.x, flipV ? id.y - directionSampleOffset : id.y + directionSampleOffset);
+
+    bool flipH = id.x >= resolution - directionSampleOffset;
+    uint2 coordH = uint2(flipH ? id.x - directionSampleOffset : id.x + directionSampleOffset, id.y);
+    
+    float sampV = heightmapTexture[coordV].x;
+    float sampH = heightmapTexture[coordH].x;
+    
+    float2 direction = float2((sampH - heightmapSample) * (flipH ? -1.0 : 1.0), (sampV - heightmapSample) * (flipV ? -1.0 : 1.0));
+    direction += _DirectionalInfluence;
+    
+    return direction;
+}
+
+float2 CalculateWaveDirection(uint3 id, uint resolution, float heightmapSample)
+{
+    bool flipV = id.y >= resolution - directionSampleOffset;
+    uint3 coordV = uint3(id.x, flipV ? id.y - directionSampleOffset : id.y + directionSampleOffset, id.z);
+
+    bool flipH = id.x >= resolution - directionSampleOffset;
+    uint3 coordH = uint3(flipH ? id.x - directionSampleOffset : id.x + directionSampleOffset, id.y, id.z);
+    
+    float sampV = _TerrainHeightmapArrayTexture[coordV].x;
+    float sampH = _TerrainHeightmapArrayTexture[coordH].x;
+    
+    float2 direction = float2(sampH - heightmapSample, sampV - heightmapSample);
+    direction.x = flipH ? -direction.x : direction.x;
+    direction.y = flipV ? -direction.y : direction.y;
+    direction += _DirectionalInfluence * 0.0001;
+    
+    direction = direction.x == 0.0 && direction.y == 0.0 ? _DirectionalInfluence : direction;
+    
+    return normalize(direction);
+}
+
+float2 CalculateWaveDirection(uint3 id, uint4x4 offsetCoords)
+{
+    float2 direction;
+    direction.x = _TerrainHeightmapArrayTexture[offsetCoords[1].xyz].x - _TerrainHeightmapArrayTexture[offsetCoords[0].xyz].x;
+    direction.y = _TerrainHeightmapArrayTexture[offsetCoords[3].xyz].x - _TerrainHeightmapArrayTexture[offsetCoords[2].xyz].x;
+    
+    direction += _DirectionalInfluence;
+    direction = normalize(direction);
+    
+    return direction;
+}
+
+uint4x4 GetAdjacentCoords(uint3 id, uint2 slice2D)
+{
+    bool valid, newSlice;
+    int newSlice1D;
+    int2 newSlice2D;
+    
+    newSlice = id.x == 0;
+    newSlice2D = int2(newSlice ? slice2D.x - 1 : slice2D.x, slice2D.y);
+    newSlice1D = GetTerrainSlice1DIndex(newSlice2D, TERRAIN_HEIGHTMAP_ARRAY_RESOLUTION);
+    valid = newSlice2D.x > -1;
+    uint4 L = uint4(
+        newSlice ? _TerrainHeightmapResolution - 1 : id.x - 1,
+        id.y,
+        valid ? newSlice1D : id.z,
+        valid ? 1 : 0);
+    L.x = valid ? L.x : id.x;
+    
+    newSlice = id.x == _TerrainHeightmapResolution - 1;
+    newSlice2D = int2(newSlice ? slice2D.x + 1 : slice2D.x, slice2D.y);
+    newSlice1D = GetTerrainSlice1DIndex(newSlice2D, TERRAIN_HEIGHTMAP_ARRAY_RESOLUTION);
+    valid = newSlice2D.x < TERRAIN_HEIGHTMAP_ARRAY_RESOLUTION;
+    uint4 R = uint4(
+        newSlice ? 0 : id.x + 1,
+        id.y,
+        valid ? newSlice1D : id.z,
+        valid ? 1 : 0);
+    R.x = valid ? R.x : id.x;
+    
+    newSlice = id.y == 0;
+    newSlice2D = int2(slice2D.x, newSlice ? slice2D.y - 1 : slice2D.y);
+    newSlice1D = GetTerrainSlice1DIndex(newSlice2D, TERRAIN_HEIGHTMAP_ARRAY_RESOLUTION);
+    valid = newSlice2D.y > -1;
+    uint4 D = uint4(
+        id.x,
+        newSlice ? _TerrainHeightmapResolution - 1 : id.y - 1,
+        valid ? newSlice1D : id.z,
+        valid ? 1 : 0);
+    D.y = valid ? D.y : id.y;
+    
+    newSlice = id.y == _TerrainHeightmapResolution - 1;
+    newSlice2D = int2(slice2D.x, newSlice ? slice2D.y + 1 : slice2D.y);
+    newSlice1D = GetTerrainSlice1DIndex(newSlice2D, TERRAIN_HEIGHTMAP_ARRAY_RESOLUTION);
+    valid = newSlice2D.y < TERRAIN_HEIGHTMAP_ARRAY_RESOLUTION;
+    uint4 U = uint4(
+        id.x,
+        newSlice ? 0 : id.y + 1,
+        valid ? newSlice1D : id.z,
+        valid ? 1 : 0);
+    U.y = valid ? U.y : id.y;
+    
+    uint4x4 o;
+    o[0] = L;
+    o[1] = R;
+    o[2] = D;
+    o[3] = U;
+    
+    return o;
+}
+
+float GetWaveOffset(float2 waveDirection, out float borderFade)
+{
+    float a = (atan2(waveDirection.y, waveDirection.x) + PI) * 0.62; // values 0 - 4 linear
+    float b = floor(a); // values 0 - 3 floored
+    
+    borderFade = 2.0 * (a - b) - 1.0;
+    borderFade *= borderFade;
+    borderFade = 1.0 - borderFade;
+    
+    return b;
+}
+
+float GetDirectionalInfluence(float2 directionalInfluence, float2 uv)
+{
+    return (directionalInfluence.x * uv.x) + (directionalInfluence.y * uv.y);
+}
+
+float GetWaveProgress(uint shoreWaveID, float directionalInfluence)
+{
+    float waveProgress = _Time.y * _ShoreWaveSpeed + ((float) shoreWaveID / (float) _ShoreWaveCount) * waveProgressLoopTime - directionalInfluence;
+    waveProgress = fmod(waveProgress, waveProgressLoopTime);
+    return waveProgress;
+}
+
+void CalculateShoreWave(float2 waveDirection, float directionalInfluence, float heightmapFalloff, uint shoreWaveID,
+    out float2 waveNormal, out float waveHeight, out float waveFoam, out float waveMask)
+{
+    // increasing value 0 -> 1
+    float progress = GetWaveProgress(shoreWaveID, directionalInfluence);
+    progress = saturate(progress);
+    
+    // value smoothly oscillating from 1 -> 0 -> 1
+    float coord = 0.5 * cos(progress * TAU) + 0.5;
+    
+    // subtracting this value
+    // values go from 0-0 -> TAU-0 -> 0-0
+    coord = heightmapFalloff - coord;
+    coord = max(coord, 0.0);
+    coord *= TAU;
+    
+    // falloff value from 2 -> _ShoreWaveFalloff at halfway progress -> 2
+    float p = (2.0 * progress - 1.0);
+    p = saturate(p * p * p + 1.0);
+    float waveFalloff = lerp(2.0, _ShoreWaveFalloff, p);
+    
+    float waveFalloffMultiplier = TAU / pow(TAU, waveFalloff);
+    
+    // amplitude decreases based on progress
+    float amplitude = 1.0 - progress;
+    
+    waveHeight = waveFalloffMultiplier * pow(coord, waveFalloff);
+    waveHeight = 0.5 - (0.5 * cos(waveHeight));
+    waveHeight *= amplitude;
+    
+    float wavePeak = pow(PI / waveFalloffMultiplier, 1.0 / waveFalloff);
+    
+    waveMask = coord < wavePeak ? waveHeight : amplitude;
+    waveHeight = waveMask;
+    
+    waveFoam = sqrt(waveHeight) * (1.0 - progress * progress);
+    
+    float derivative = 0.5 * sin(waveFalloffMultiplier * pow(coord, waveFalloff)) * (waveFalloffMultiplier * waveFalloff * amplitude * pow(max(coord, EPSILON), 2.0 * waveFalloff - 1.0));
+    
+    waveNormal = derivative * _ShoreWaveNormalStrength * waveDirection;
+}
+
+[numthreads(MAIN_THREADS_X, MAIN_THREADS_Y, MAIN_THREADS_Z)]
+void InitialFill(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _TerrainHeightmapResolution || id.y >= _TerrainHeightmapResolution)
+    {
+        return;
+    }
+    
+    _TerrainHeightmapArrayTexture[id] = 0.0;
+    _TerrainShoreWaveArrayTexture[id] = float4(0.0, 0.0, 0.0, 0.0);
+}
+
+[numthreads(DIRECTIONAL_INFLUENCE_THREADS_X, DIRECTIONAL_INFLUENCE_THREADS_Y, DIRECTIONAL_INFLUENCE_THREADS_Z)]
+void CopyDirectionalInfluence(uint3 id : SV_GroupThreadID)
+{
+    // copy directional influence buffer to GS memory
+    GS_DirectionalInfluenceBuffer[id.x] = _DirectionalInfluenceBuffer[id.x];
+    
+    GroupMemoryBarrier();
+    
+    uint sliceLookup = id.x / _ShoreWaveCount;
+    
+    if (sliceLookup >= TERRAIN_HEIGHTMAP_ARRAY_SLICES)
+    {
+        return;
+    }
+    
+    uint shoreWave = id.x % _ShoreWaveCount;
+    uint slice = _TargetSliceIndicesBuffer[sliceLookup];
+    uint2 slice2D = slice2DLookupArray[slice];
+    int2 prevSlice2D = (int2) slice2D + _Slice2DOffsetDirection;
+
+    if (InvalidTerrainSlice2D(prevSlice2D) || InvalidTerrainHeightmapArraySliceIndex(slice, _ValidTerrainHeightmapMask))
+    {
+        _DirectionalInfluenceBuffer[slice * _ShoreWaveCount + shoreWave] = float4(_DirectionalInfluence, 0.0, 0.0);
+    }
+    else
+    {
+        uint prevSlice = slice1DLookupArray[prevSlice2D.x][prevSlice2D.y];
+        _DirectionalInfluenceBuffer[slice * _ShoreWaveCount + shoreWave] = GS_DirectionalInfluenceBuffer[prevSlice * _ShoreWaveCount + shoreWave];
+    }
+}
+
+// dispatch groups X = ceil ( valid slices * wave count / 64.0 )
+[numthreads(DIRECTIONAL_INFLUENCE_THREADS_X, DIRECTIONAL_INFLUENCE_THREADS_Y, DIRECTIONAL_INFLUENCE_THREADS_Z)]
+void DirectionalInfluence(uint3 id : SV_DispatchThreadID)
+{
+    uint sliceLookup = id.x / _ShoreWaveCount;
+    
+    if (sliceLookup >= _SliceUpdateCount)
+    {
+        return;
+    }
+    
+    uint shoreWave = id.x % _ShoreWaveCount;
+    uint slice = _TargetSliceIndicesBuffer[sliceLookup];
+    uint sliceWS = _TargetSliceIndicesBuffer[sliceLookup + TERRAIN_HEIGHTMAP_ARRAY_SLICES];
+    uint2 slice2D = slice2DLookupArray[slice];
+    uint2 slice2DWS = GetTerrainLookup2DIndex(sliceWS, _TerrainLookupResolution);
+    float2 uv = (float2) slice2DWS + float2(0.5, 0.5);
+    
+    float4 directionalInfluence = _DirectionalInfluenceBuffer[slice * _ShoreWaveCount + shoreWave];
+    float waveProgress = GetWaveProgress(shoreWave, GetDirectionalInfluence(directionalInfluence.xy, uv));
+    
+    if (waveProgress < 2.0)
+    {
+        directionalInfluence.z = 0.0;
+    }
+    else if (directionalInfluence.z < 1.0)
+    {
+        directionalInfluence.w = 0.0;
+    }
+    
+    if (directionalInfluence.w < 1.0)
+    {
+        float newWaveProgress = GetWaveProgress(shoreWave, GetDirectionalInfluence(_DirectionalInfluence, uv));
+        if (newWaveProgress > 2.0)
+        {
+            _DirectionalInfluenceBuffer[slice * _ShoreWaveCount + shoreWave] = float4(_DirectionalInfluence, 1.0, 1.0);
+        }
+        else
+        {
+            _DirectionalInfluenceBuffer[slice * _ShoreWaveCount + shoreWave] = float4(_DirectionalInfluence, 0.0, 0.0);
+        }
+
+        return;
+    }
+
+    _DirectionalInfluenceBuffer[slice * _ShoreWaveCount + shoreWave] = directionalInfluence;
+}
+
+[numthreads(MAIN_THREADS_X, MAIN_THREADS_Y, MAIN_THREADS_Z)]
+void ComputeShoreWaves(uint3 id : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupThreadID)
+{   
+    if (id.x >= _TerrainHeightmapResolution || id.y >= _TerrainHeightmapResolution)
+    {
+        return;
+    }
+    
+    uint3 tID = uint3(id.xy, _TargetSliceIndicesBuffer[id.z]); // tID.z = slice
+    uint sliceWS = _TargetSliceIndicesBuffer[id.z + TERRAIN_HEIGHTMAP_ARRAY_SLICES];
+    uint2 slice2D = slice2DLookupArray[tID.z];
+    uint2 slice2DWS = GetTerrainLookup2DIndex(sliceWS, _TerrainLookupResolution);
+    
+    float2 uv01 = (float2) tID.xy / (float) _TerrainHeightmapResolution;
+    float2 uvWS = (uv01 + (float2) slice2DWS) * _TerrainSize.xz + _TerrainPosScaledBounds.xz * _TerrainSize.xz;
+    float2 uvSlice = uv01 + (float2) slice2D;
+    float2 uvSliceWS = uv01 + (float2) slice2DWS;
+    
+    float terrainHeightmapSample = _TerrainHeightmapArrayTexture[tID].x;
+    float terrainHeightmapSampleScaled = terrainHeightmapSample * _TerrainSize.y;
+    
+    float shoreWaveHeightmapFalloff = _WaterHeight + _HeightmapOffset - terrainHeightmapSampleScaled;
+    shoreWaveHeightmapFalloff /= _ShoreWaveStartDepth;
+    shoreWaveHeightmapFalloff = saturate(shoreWaveHeightmapFalloff);
+    
+    float waveHeightSum = 0.0, waveMaskSum = 0.0, waveFoamSum = 0.0;
+    float2 waveNormalSum = float2(0.0, 0.0);
+    
+    if (shoreWaveHeightmapFalloff != 1.0)
+    {
+        float4 noiseTextureSample = _RandomNoiseTexture.SampleLevel(sampler_Linear_Repeat, uvSliceWS * _ShoreWaveNoiseScale, 0.0) * _ShoreWaveNoiseStrength;
+        float2 waveDirection = CalculateWaveDirection(tID, _TerrainHeightmapResolution, terrainHeightmapSample);
+        
+        // this has potential but still needs work
+        //float borderFade;
+        //float waveOffset = GetWaveOffset(waveDirection, borderFade);
+        
+        // instead of looping could use local thread group memory to sum waves
+        for (uint wave = 0; wave < _ShoreWaveCount; wave++)
+        {
+            float4 directionalInfluence = _DirectionalInfluenceBuffer[tID.z * _ShoreWaveCount + wave];
+            
+            if (directionalInfluence.w > 0.0)
+            {
+                float directionalInfluencePerWave = GetDirectionalInfluence(directionalInfluence.xy, uvSliceWS) + noiseTextureSample[wave % 4];
+            
+                float waveHeight, waveMask, waveFoam;
+                float2 waveNormal;
+                CalculateShoreWave(waveDirection, directionalInfluencePerWave, shoreWaveHeightmapFalloff, wave,
+                    waveNormal, waveHeight, waveFoam, waveMask);
+                
+                waveHeight *= 1.0 + noiseTextureSample[(wave + 1) % 4] * 10.0;
+                
+                // check adjacent slices
+                uint4 slices = adjacentSliceLookupArray[tID.z];
+                bool4 invalid = InvalidAdjacentSlices(tID.z, _ValidTerrainHeightmapMask);
+                
+                [unroll(4)]
+                for (uint adjacentSlice = 0; adjacentSlice < 4; adjacentSlice++)
+                {
+                    float4 adjacentDirectionalInfluence = _DirectionalInfluenceBuffer[(invalid[adjacentSlice] ? 0 : slices[adjacentSlice]) * _ShoreWaveCount + wave];
+                    invalid[adjacentSlice] =
+                        abs(directionalInfluence.x - adjacentDirectionalInfluence.x) > 0.01 ||
+                        abs(directionalInfluence.y - adjacentDirectionalInfluence.y) > 0.01 ||
+                        adjacentDirectionalInfluence.w < 1.0 ||
+                        invalid[adjacentSlice];
+                }
+                
+                // fade this shore wave at edges of terrain if this shore wave of adjacent terrain is invalid
+                float fadeMaskH = saturate(1.0 - 4.0 * uv01.x) * (float) invalid.x;
+                fadeMaskH += saturate(4.0 * uv01.x - 3.0) * (float) invalid.y;
+                float fadeMaskV = saturate(1.0 - 4.0 * uv01.y) * (float) invalid.z;
+                fadeMaskV += saturate(4.0 * uv01.y - 3.0) * (float) invalid.w;
+                float fadeMask = 1.0 - max(fadeMaskH, fadeMaskV);
+                
+                waveFoam *= fadeMask;
+                waveHeight *= fadeMask;
+                waveNormal *= fadeMask;
+                waveMask *= fadeMask;
+                
+                bool mask = waveMask > waveMaskSum;
+                waveFoamSum = mask ? waveFoam : waveFoamSum;
+                waveHeightSum = mask ? waveHeight : waveHeightSum;
+                waveNormalSum = mask ? waveNormal : waveNormalSum;
+                waveMaskSum = mask ? waveMask : waveMaskSum;
+            }
+        }
+
+        float waveMask = 1.0 - shoreWaveHeightmapFalloff;
+        
+        // shore waves fade out 1 terrain length away
+        waveMask *= saturate(1.0 - DistanceSquared(_WorldSpaceCameraPos_Internal.xz, uvWS) / (_TerrainSize.x * _TerrainSize.x));
+        
+        waveFoamSum *= waveMask;
+        waveHeightSum *= waveMask;
+        waveNormalSum *= waveMask;
+    }
+    
+    waveNormalSum = (waveNormalSum + 1.0) * 0.5;
+    
+    _TerrainShoreWaveArrayTexture[tID] = float4(waveHeightSum, waveNormalSum, waveFoamSum);
+}
+
+[numthreads(MAIN_THREADS_X, MAIN_THREADS_Y, MAIN_THREADS_Z)]
+void UpdateTexturesCopyFoam(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _TerrainHeightmapResolution || id.y >= _TerrainHeightmapResolution)
+    {
+        return;
+    }
+    
+    uint3 tID = uint3(id.xy, _Slice);
+    uint3 tIDSource = uint3(id.xy, _SourceSlice);
+    
+    _TerrainHeightmapArrayTexture[tID] = _TerrainHeightmapTexture[tID.xy];
+    _TerrainShoreWaveArrayTexture[tID] = _TerrainShoreWaveArrayTexture[tIDSource];
+}
+
+[numthreads(MAIN_THREADS_X, MAIN_THREADS_Y, MAIN_THREADS_Z)]
+void UpdateTexturesResetFoam(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _TerrainHeightmapResolution || id.y >= _TerrainHeightmapResolution)
+    {
+        return;
+    }
+    
+    uint3 tID = uint3(id.xy, _Slice);
+    
+    _TerrainHeightmapArrayTexture[tID] = _TerrainHeightmapTexture[tID.xy];
+    _TerrainShoreWaveArrayTexture[tID] = float4(0.0, 0.0, 0.0, 0.0);
+}
