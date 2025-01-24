@@ -174,6 +174,12 @@ namespace GOcean
 
         protected override void Execute(CustomPassContext ctx)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                EditorApplication.QueuePlayerLoopUpdate();
+            }
+#endif
             components.Generic.SetRTHandleSystemReferenceSize(ctx);
             components.Terrain.UpdateTerrainData(ctx);
             constants.UpdatePerCameraData(ctx, components);
@@ -209,6 +215,34 @@ namespace GOcean
             components.Underwater.DrawOpaqueUnderwaterFog(ctx);
             components.Screen.DrawLightRaysScreenWater(ctx);
             components.Screen.BlurScreenTexture(ctx);
+        }
+    }
+
+    public sealed class BeforeTransparentCustomPass : CustomPass
+    {
+        public Ocean ocean;
+        public ComponentContainer components;
+
+        public BeforeTransparentCustomPass(Ocean ocean, ComponentContainer components)
+        {
+            this.ocean = ocean;
+            this.components = components;
+        }
+
+        protected override void Setup(ScriptableRenderContext renderContext, CommandBuffer cmd)
+        {
+            targetColorBuffer = TargetBuffer.None;
+            targetDepthBuffer = TargetBuffer.None;
+            clearFlags = ClearFlag.None;
+            name = "GOceanBeforePreRefraction";
+        }
+
+        protected override void Execute(CustomPassContext ctx)
+        {
+            components.Generic.DrawWaterForward(ctx);
+#if UNITY_EDITOR
+            components.Mesh.DrawWireframe(ctx);
+#endif
         }
     }
 

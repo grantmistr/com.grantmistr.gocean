@@ -81,6 +81,11 @@ Shader "GOcean/Fullscreen"
 
     float4 OpaqueCaustic(Varyings varyings) : SV_Target
     {
+        if (_DirectionalLightCount < 1)
+        {
+            return float4(0.0, 0.0, 0.0, 0.0);
+        }
+    
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(varyings);
 
         float depth = LoadCameraDepth(varyings.positionCS.xy); // opaque depth
@@ -138,7 +143,7 @@ Shader "GOcean/Fullscreen"
         float3 caustic = CalculateCaustic(_SpectrumTexture, _SpectrumTextureResolution, _RandomNoiseTexture, s_linear_repeat_sampler,
                 _PatchSize, lightRotationMatrix, positionAbsWS, _CausticTiling, _CausticDefinition, _CausticDistortion, causticMaskBelow);
     
-        caustic *= L.color * GetCurrentExposureMultiplier() * (_DirectionalLightCount > 0);
+        caustic *= L.color * GetCurrentExposureMultiplier();
         
         float causticMask = CalculateCausticMask(normalData.normalWS, positionAbsWS, L.forward, waterMask, underwaterMask, _WaterHeight,
                 _SpectrumTexture, _PatchSize, s_linear_repeat_sampler, _CausticFadeDepth, _CausticAboveWaterFadeDistance, _CausticStrength, shadowMask);

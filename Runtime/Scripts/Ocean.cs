@@ -10,7 +10,7 @@ namespace GOcean
     using PropIDs = ShaderPropertyIDs;
     using static Helper;
 
-    [ExecuteInEditMode]
+    [ExecuteAlways]
     [DisallowMultipleComponent]
     [AddComponentMenu("GOcean/Ocean", -1)]
     public class Ocean : MonoBehaviour
