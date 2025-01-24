@@ -28,6 +28,7 @@ There is a Simple Floater script, `SimpleFloater.cs`, that will stick any game o
 ### Reference
 
 ##### Properties
+| -------------------------	| -----------------------------------------------------------------------------------------------------------------------------	|
 | Instance					| The Ocean singleton instance in the scene.																					|
 | OceanSamplers				| Static list of OceanSampler objects; updated on FixedUpdate.																	|
 | parametersUser			| The ParametersUser scriptable object whose parameters will be used to initialize the ocean.									|
@@ -50,6 +51,7 @@ There is a Simple Floater script, `SimpleFloater.cs`, that will stick any game o
 | Turbulence				| Overrides the wind direction.																									|
 
 ##### Public Methods
+| -------------------------	| -----------------------------------------------------------------------------------------------------------------------------	|
 | Initialize				| Initialize the ocean. Call after modifying parametersUser.																	|
 | ReInitialize				| Will release resources (like render textures) before initializing.															|
 | UpdateOnDemandDataBuffer	| Updates the OnDemandData constant buffer. Call this after modifying ocean properties.											|
