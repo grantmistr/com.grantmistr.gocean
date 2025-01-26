@@ -282,7 +282,7 @@ Material:
     - _UVBase: 0
     - _UVDetail: 0
     - _UVEmissive: 0
-    - _UnderwaterSurfaceEmissionStrength: 50
+    - _UnderwaterSurfaceEmissionStrength: 20
     - _UseEmissiveIntensity: 0
     - _UseShadowThreshold: 0
     - _ZTestDepthEqualForOpaque: 4
@@ -307,7 +307,7 @@ Material:
     - _UVDetailsMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
-    - _WaterColor: {r: 0.5228779, g: 0.92318326, b: 1.3041189, a: 1}
+    - _WaterColor: {r: 0.3915094, g: 0.70572996, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &6019786590546721392

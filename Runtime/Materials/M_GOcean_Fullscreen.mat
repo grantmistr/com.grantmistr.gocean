@@ -194,7 +194,7 @@ Material:
     - _BlendMode: 0
     - _CausticAboveWaterFadeDistance: 20
     - _CausticDefinition: 10
-    - _CausticDistortion: 0.004
+    - _CausticDistortion: 0.002
     - _CausticFadeDepth: 400
     - _CausticTiling: 0.8
     - _CoatMask: 0
@@ -325,6 +325,6 @@ Material:
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
     - _UnderwaterFogColor: {r: 0.6179246, g: 0.80317324, b: 1, a: 1}
-    - _WaterColor: {r: 0.5228779, g: 0.92318326, b: 1.3041189, a: 1}
+    - _WaterColor: {r: 0.3915094, g: 0.70572996, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

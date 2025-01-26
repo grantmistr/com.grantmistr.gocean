@@ -201,9 +201,9 @@ Material:
     - _DoubleSidedNormalMode: 0
     - _DstBlend: 10
     - _DstBlend2: 10
-    - _EdgeFoamFalloff: 0.1
+    - _EdgeFoamFalloff: 0.5
     - _EdgeFoamStrength: 0.3
-    - _EdgeFoamWidth: 0.1
+    - _EdgeFoamWidth: 0.2
     - _EmissiveColorMode: 1
     - _EmissiveExposureWeight: 1
     - _EmissiveIntensity: 1
@@ -296,7 +296,7 @@ Material:
     - _UVDetail: 0
     - _UVEmissive: 0
     - _UVMultiplier: 0.9980507
-    - _UnderwaterSurfaceEmissionStrength: 50
+    - _UnderwaterSurfaceEmissionStrength: 20
     - _UseEmissiveIntensity: 0
     - _UseShadowThreshold: 0
     - _WaveDisplacementFade: 40
@@ -324,7 +324,7 @@ Material:
     - _UVDetailsMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
-    - _WaterColor: {r: 0.5228779, g: 0.92318326, b: 1.3041189, a: 1}
+    - _WaterColor: {r: 0.3915094, g: 0.70572996, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &6072041512886400237

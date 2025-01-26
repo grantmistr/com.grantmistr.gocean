@@ -174,12 +174,6 @@ namespace GOcean
 
         protected override void Execute(CustomPassContext ctx)
         {
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                EditorApplication.QueuePlayerLoopUpdate();
-            }
-#endif
             components.Generic.SetRTHandleSystemReferenceSize(ctx);
             components.Terrain.UpdateTerrainData(ctx);
             constants.UpdatePerCameraData(ctx, components);

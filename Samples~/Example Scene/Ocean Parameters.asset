@@ -39,7 +39,7 @@ MonoBehaviour:
       type: {class: GenericParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
       data:
         waterWritesToDepth: 1
-        randomSeed: 33
+        randomSeed: 0
         waterHeight: 44
         diffusionProfile: {fileID: 11400000, guid: 0ff5f42b178590e47af75d21ee34a2bd, type: 2}
     - rid: 8760515485916201240
@@ -75,8 +75,8 @@ MonoBehaviour:
         distantSmoothness: 0.7
         smoothnessTransitionDistance: 2000
         refractionStrength: 5
-        waterColor: {r: 0.5228779, g: 0.92318326, b: 1.3041189, a: 1}
-        scatteringColor: {r: 0.2523585, g: 0.38207546, b: 0.5, a: 1}
+        waterColor: {r: 0.3915094, g: 0.70572996, b: 1, a: 1}
+        scatteringColor: {r: 0.2520915, g: 0.38964808, b: 0.5188679, a: 1}
         scatteringFalloff: 5
     - rid: 8760515485916201243
       type: {class: FoamParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
@@ -89,8 +89,8 @@ MonoBehaviour:
         foamOffsetSpeed: 1
         foamHardness: 0.6
         distantFoam: 0.96
-        edgeFoamWidth: 0.1
-        edgeFoamFalloff: 0.1
+        edgeFoamWidth: 0.2
+        edgeFoamFalloff: 0.5
         edgeFoamStrength: 0.3
         shoreWaveFoamAmount: 2
         foamDecayRate: 1
@@ -122,7 +122,7 @@ MonoBehaviour:
       data:
         causticStrength: 0.08
         causticTiling: 0.8
-        causticDistortion: 0.004
+        causticDistortion: 0.002
         causticDefinition: 10
         causticFadeDepth: 400
         causticAboveWaterFadeDistance: 20
@@ -131,7 +131,7 @@ MonoBehaviour:
       data:
         underwaterFogColor: {r: 0.6179246, g: 0.80317324, b: 1, a: 1}
         underwaterFogFadeDistance: 150
-        underwaterSurfaceEmissionStrength: 50
+        underwaterSurfaceEmissionStrength: 20
         lightRayShadowMultiplier: 0.6
         lightRayTiling: 1
         lightRayDefinition: 1.5
@@ -147,5 +147,5 @@ MonoBehaviour:
         tessellationFalloff: 0.7
         tessellationOffset: 0
         cullPadding: 0
-        displacementFalloff: 4
+        displacementFalloff: 3
         drawWireframe: 0

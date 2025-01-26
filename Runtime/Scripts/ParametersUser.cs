@@ -189,8 +189,8 @@ namespace GOcean
         [Tooltip("When spectrum slices get combined, there can be too much foam, so slightly reducing this value below 1 can look good.")]
         [Range(0f, 1f)]
         public float distantFoam = 0.96f;
-        public float edgeFoamWidth = 0f;
-        public float edgeFoamFalloff = 0.1f;
+        public float edgeFoamWidth = 0.2f;
+        public float edgeFoamFalloff = 0.5f;
         public float edgeFoamStrength = 0.3f;
         public float shoreWaveFoamAmount = 2f;
         [Min(0f)]
@@ -264,7 +264,7 @@ namespace GOcean
         public float causticStrength = 0.08f;
         public float causticTiling = 0.8f;
         [Tooltip("Strength of chromatic aberration type effect.")]
-        public float causticDistortion = 0.004f;
+        public float causticDistortion = 0.002f;
         [Min(0f)]
         public float causticDefinition = 12f;
         [Tooltip("Underwater depth at which caustics (and light rays) will fade out.")]

@@ -173,6 +173,7 @@ namespace GOcean
             oceanRenderParams = new RenderParams(ocean.OceanM);
             oceanRenderParams.shadowCastingMode = ShadowCastingMode.Off;
             oceanRenderParams.receiveShadows = false;
+            oceanRenderParams.worldBounds = MAX_BOUNDS;
 
             distantOceanRenderParams = new RenderParams(ocean.DistantOceanM);
             distantOceanRenderParams.shadowCastingMode = ShadowCastingMode.Off;
@@ -333,7 +334,7 @@ namespace GOcean
             if (components.Mesh.DrawMesh)
             {
                 //ocean.OceanM.SetPass(shaderPassForwardOcean);
-                oceanRenderParams.worldBounds = components.Mesh.MeshBounds;
+                //oceanRenderParams.worldBounds = components.Mesh.MeshBounds;
                 Graphics.RenderPrimitivesIndirect(oceanRenderParams, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, 1, (int)Mesh.IndirectStartCommand.VERTEX_COUNT);
                 //Graphics.DrawProceduralIndirect(ocean.OceanM, components.Mesh.MeshBounds, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer,
                 //    (int)Mesh.IndirectStartCommand.VERTEX_COUNT, null, null, ShadowCastingMode.Off, false, 0);

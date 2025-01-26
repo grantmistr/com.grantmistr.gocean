@@ -145,13 +145,18 @@ Shader "GOcean/OceanDistant"
         #pragma shader_feature_local_fragment _ _ENABLE_FOG_ON_TRANSPARENT
         #pragma multi_compile _ DEBUG_DISPLAY
         #pragma shader_feature_local_fragment _ _DISABLE_DECALS
+        #pragma shader_feature_local_raytracing _ _DISABLE_DECALS
         #pragma shader_feature_local_fragment _ _DISABLE_SSR
+        #pragma shader_feature_local_raytracing _ _DISABLE_SSR
         #pragma shader_feature_local_fragment _ _DISABLE_SSR_TRANSPARENT
+        #pragma shader_feature_local_raytracing _ _DISABLE_SSR_TRANSPARENT
         #pragma multi_compile _ LIGHTMAP_ON
         #pragma multi_compile _ DIRLIGHTMAP_COMBINED
         #pragma multi_compile_fragment _ PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
+        #pragma multi_compile_raytracing _ PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
         #pragma multi_compile _ DYNAMICLIGHTMAP_ON
         #pragma multi_compile_fragment _ SHADOWS_SHADOWMASK
+        #pragma multi_compile_raytracing _ SHADOWS_SHADOWMASK
         #pragma multi_compile_fragment DECALS_OFF DECALS_3RT DECALS_4RT
         #pragma multi_compile_fragment _ DECAL_SURFACE_GRADIENT
         #pragma multi_compile _ USE_LEGACY_LIGHTMAPS
@@ -160,8 +165,19 @@ Shader "GOcean/OceanDistant"
         #pragma multi_compile_fragment AREA_SHADOW_MEDIUM AREA_SHADOW_HIGH
         #pragma multi_compile_fragment SCREEN_SPACE_SHADOWS_OFF SCREEN_SPACE_SHADOWS_ON
         #pragma multi_compile_fragment USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
+        #pragma shader_feature_local _ _REFRACTION_PLANE _REFRACTION_SPHERE _REFRACTION_THIN
+        #pragma shader_feature_local_fragment _MATERIAL_FEATURE_SUBSURFACE_SCATTERING
+        #pragma shader_feature_local_raytracing _MATERIAL_FEATURE_SUBSURFACE_SCATTERING
         #pragma shader_feature_local_fragment _MATERIAL_FEATURE_TRANSMISSION
+        #pragma shader_feature_local_raytracing _MATERIAL_FEATURE_TRANSMISSION
+        #pragma shader_feature_local_fragment _MATERIAL_FEATURE_ANISOTROPY
+        #pragma shader_feature_local_raytracing _MATERIAL_FEATURE_ANISOTROPY
+        #pragma shader_feature_local_fragment _MATERIAL_FEATURE_IRIDESCENCE
+        #pragma shader_feature_local_raytracing _MATERIAL_FEATURE_IRIDESCENCE
+        #pragma shader_feature_local_fragment _MATERIAL_FEATURE_SPECULAR_COLOR
+        #pragma shader_feature_local_raytracing _MATERIAL_FEATURE_SPECULAR_COLOR
         #pragma shader_feature_local_fragment _MATERIAL_FEATURE_COLORED_TRANSMISSION
+        #pragma shader_feature_local_raytracing _MATERIAL_FEATURE_COLORED_TRANSMISSION
             // GraphKeywords: <None>
         
             // Defines
@@ -392,10 +408,10 @@ Shader "GOcean/OceanDistant"
         #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Decal/DecalUtilities.hlsl"
         #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitDecalData.hlsl"
         #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderGraphFunctions.hlsl"
-            #include_with_pragmas "Packages/com.cheddabunny.gocean/Runtime/Shaders/ShaderInclude/GOcean_UnderwaterSampling.hlsl"
-        #include_with_pragmas "Packages/com.cheddabunny.gocean/Runtime/Shaders/ShaderInclude/GOcean_Constants.hlsl"
-        #include_with_pragmas "Packages/com.cheddabunny.gocean/Runtime/Shaders/ShaderInclude/GOcean_StochasticSampling.hlsl"
-        #include_with_pragmas "Packages/com.cheddabunny.gocean/Runtime/Shaders/ShaderInclude/GOcean_HelperFunctions.hlsl"
+            #include_with_pragmas "ShaderInclude/GOcean_UnderwaterSampling.hlsl"
+        #include_with_pragmas "ShaderInclude/GOcean_Constants.hlsl"
+        #include_with_pragmas "ShaderInclude/GOcean_StochasticSampling.hlsl"
+        #include_with_pragmas "ShaderInclude/GOcean_HelperFunctions.hlsl"
         
             // --------------------------------------------------
             // Structs and Packing
@@ -560,6 +576,12 @@ Shader "GOcean/OceanDistant"
         {
             Out = saturate(In);
         }
+        
+        // unity-custom-func-begin
+        void GetRTHandleScale_float(out float4 RTHandleScale){
+            RTHandleScale = _RTHandleScale;
+        }
+        // unity-custom-func-end
         
         void Unity_Multiply_float_float(float A, float B, out float Out)
         {
@@ -726,7 +748,11 @@ Shader "GOcean/OceanDistant"
             float _Saturate_0705802465c3413eb3216120ef15e860_Out_1_Float;
             Unity_Saturate_float(_Subtract_1a76f1f3d70941de873f36a58260c42a_Out_2_Float, _Saturate_0705802465c3413eb3216120ef15e860_Out_1_Float);
             UnityTexture2D _Property_d9258f2048684c05ae4d0ffdf337085f_Out_0_Texture2D = UnityBuildTexture2DStructNoScale(_OceanScreenTexture);
-            float4 _SampleTexture2D_af2fcd8026794ab889595ac7c85b5bde_RGBA_0_Vector4 = SAMPLE_TEXTURE2D(_Property_d9258f2048684c05ae4d0ffdf337085f_Out_0_Texture2D.tex, UnityBuildSamplerStateStruct(SamplerState_Point_Clamp).samplerstate, _Property_d9258f2048684c05ae4d0ffdf337085f_Out_0_Texture2D.GetTransformedUV(_Add_dfd68ddbe8ce4b749037aa939a1526e5_Out_2_Vector2) );
+            float4 _GetRTHandleScaleCustomFunction_094d961ec562450aa878e06145da73a3_RTHandleScale_0_Vector4;
+            GetRTHandleScale_float(_GetRTHandleScaleCustomFunction_094d961ec562450aa878e06145da73a3_RTHandleScale_0_Vector4);
+            float2 _Multiply_80dbc60cc75947f69e2bed24ffff4991_Out_2_Vector2;
+            Unity_Multiply_float2_float2(_Add_dfd68ddbe8ce4b749037aa939a1526e5_Out_2_Vector2, (_GetRTHandleScaleCustomFunction_094d961ec562450aa878e06145da73a3_RTHandleScale_0_Vector4.xy), _Multiply_80dbc60cc75947f69e2bed24ffff4991_Out_2_Vector2);
+            float4 _SampleTexture2D_af2fcd8026794ab889595ac7c85b5bde_RGBA_0_Vector4 = SAMPLE_TEXTURE2D(_Property_d9258f2048684c05ae4d0ffdf337085f_Out_0_Texture2D.tex, UnityBuildSamplerStateStruct(SamplerState_Point_Clamp).samplerstate, _Property_d9258f2048684c05ae4d0ffdf337085f_Out_0_Texture2D.GetTransformedUV(_Multiply_80dbc60cc75947f69e2bed24ffff4991_Out_2_Vector2) );
             float _SampleTexture2D_af2fcd8026794ab889595ac7c85b5bde_R_4_Float = _SampleTexture2D_af2fcd8026794ab889595ac7c85b5bde_RGBA_0_Vector4.r;
             float _SampleTexture2D_af2fcd8026794ab889595ac7c85b5bde_G_5_Float = _SampleTexture2D_af2fcd8026794ab889595ac7c85b5bde_RGBA_0_Vector4.g;
             float _SampleTexture2D_af2fcd8026794ab889595ac7c85b5bde_B_6_Float = _SampleTexture2D_af2fcd8026794ab889595ac7c85b5bde_RGBA_0_Vector4.b;
@@ -1371,7 +1397,7 @@ Shader "GOcean/OceanDistant"
             // --------------------------------------------------
             // Main
         
-            #include "Packages/com.cheddabunny.gocean/Runtime/Shaders/ShaderInclude/GOcean_Distant_Pass_Forward.hlsl"
+            #include "ShaderInclude/GOcean_Distant_Pass_Forward.hlsl"
         
             // --------------------------------------------------
             // Visual Effect Vertex Invocations

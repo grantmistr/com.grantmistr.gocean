@@ -1,5 +1,5 @@
 # GOcean
-#### for HDRP
+*for HDRP*
 
 GOcean is an infinite ocean rendering system for Unity HDRP.
 
@@ -9,7 +9,7 @@ GOcean is an infinite ocean rendering system for Unity HDRP.
 
 ### Requirements
 
-- Unity Editor 6000.0.32f1
+- Unity 6000.0
 - HDRP 17.0.3
 - Compute Shader support
 
@@ -59,4 +59,4 @@ There is a Simple Floater script, `SimpleFloater.cs`, that will stick any game o
 
 ### Samples
 
-There is an example scene located in *'Samples/ExampleScene'*.
+There is an example scene located in *'Samples/Example Scene'*.

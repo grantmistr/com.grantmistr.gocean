@@ -84,8 +84,6 @@ namespace GOcean
             }
         }
 
-        private bool firstInit = true;
-
         public Vector4 CascadeShadowSplits => constants.perCameraData[0].cascadeShadowSplits;
         public Vector4 CameraPositionStepped => constants.perCameraData[0].cameraPositionStepped;
         public float CameraZRotation => constants.perCameraData[0].cameraZRotation;
@@ -207,17 +205,6 @@ namespace GOcean
             return true;
         }
 
-        // Can't seem to fill a render texture using a compute shader on the frame the RT is created?
-        // Maybe this has to do with loading the compute shader from resources... IDK man, seems to be
-        // editor only problem tho
-        private IEnumerator FirstInit()
-        {
-            yield return WaitForFrames(1);
-            components.Generic.GenerateRandomNoise();
-            components.Terrain.InitialArrayTextureFill();
-            components.Terrain.FirstUpdateTerrainTextureArray();
-        }
-
         public void Initialize()
         {
             if (!PipelineSupportCustomPass())
@@ -258,6 +245,21 @@ namespace GOcean
             }
 #endif
         }
+
+#if UNITY_EDITOR
+        private bool firstInit = true;
+
+        // Can't seem to fill a render texture using a compute shader on the frame the RT is created?
+        // Maybe this has to do with loading the compute shader from resources... IDK man, seems to be
+        // editor only problem tho
+        private IEnumerator FirstInit()
+        {
+            yield return WaitForFrames(1);
+            components.Generic.GenerateRandomNoise();
+            components.Terrain.InitialArrayTextureFill();
+            components.Terrain.FirstUpdateTerrainTextureArray();
+        }
+#endif
 
         private void GetDefaultResources()
         {

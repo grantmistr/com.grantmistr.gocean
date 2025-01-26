@@ -5,7 +5,7 @@ Example code, this is in a modified version of HDRPs forward pass hlsl file:
 
 ...
 
-    #ifdef _SURFACE_TYPE_TRANSPARENT
+	#ifdef _SURFACE_TYPE_TRANSPARENT
                 if (_DirectionalLightCount > 0)
                 {
                     HDShadowContext sc = InitShadowContext();
@@ -19,11 +19,11 @@ Example code, this is in a modified version of HDRPs forward pass hlsl file:
             
                     float waterDepth = _WaterDepthTexture[posInput.positionSS].x;
         
-    #if UNITY_REVERSED_Z
+	#if UNITY_REVERSED_Z
                     bool waterMask = waterDepth > posInput.deviceDepth;
-    #else
+	#else
                     bool waterMask = waterDepth < posInput.deviceDepth;
-    #endif
+	#endif
         
                     bool underwaterMask = GetUnderwaterMask(_OceanScreenTexture[posInput.positionSS]);
         
@@ -53,10 +53,10 @@ Example code, this is in a modified version of HDRPs forward pass hlsl file:
             
                     outColor.xyz += caustic;
             
-    #if BLENDINGMODE_ADDITIVE
+	#if BLENDINGMODE_ADDITIVE
                     outColor *= 1.0 - fogMask;
-    #else
+	#else
                     outColor = lerp(outColor, float4(fogColor, 1.0), fogMask);
-    #endif
+	#endif
                 }
-    #endif
+	#endif

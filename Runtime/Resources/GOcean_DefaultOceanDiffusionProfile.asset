@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: GOcean_DefaultOceanDiffusionProfile
   m_EditorClassIdentifier: 
   profile:
-    scatteringDistance: {r: 0.39217535, g: 0.5803296, b: 0.7490196, a: 1}
-    scatteringDistanceMultiplier: 0.46601796
+    scatteringDistance: {r: 0.37804294, g: 0.572364, b: 0.7490196, a: 1}
+    scatteringDistanceMultiplier: 0.66753924
     transmissionTint: {r: 4, g: 4, b: 4, a: 1}
     texturingMode: 0
     smoothnessMultipliers: {x: 1, y: 2}
