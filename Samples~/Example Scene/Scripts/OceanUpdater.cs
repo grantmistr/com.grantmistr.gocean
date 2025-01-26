@@ -1,34 +1,36 @@
 using UnityEngine;
-using GOcean;
 
-public class OceanUpdater : MonoBehaviour
+namespace GOcean
 {
-    private Ocean ocean;
-
-    private float windSpeed;
-    private float windDirection;
-    private float turbulence;
-
-    [SerializeField]
-    private float timeScale = 1f;
-
-    void Start()
+    public class OceanUpdater : MonoBehaviour
     {
-        ocean = GetComponent<Ocean>();
-    }
+        private Ocean ocean;
 
-    void Update()
-    {
-        float t = Time.timeSinceLevelLoad * timeScale;
+        private float windSpeed;
+        private float windDirection;
+        private float turbulence;
 
-        windSpeed = 11f + Mathf.Sin(t * 0.01f) * 10f;
-        windDirection = Mathf.Sin(t * 0.001f) * Mathf.PI;
-        turbulence = Mathf.Sin(t * 0.005f + 4.33f) * 0.2f + 0.3f;
+        [SerializeField]
+        private float timeScale = 1f;
 
-        ocean.WindSpeed = windSpeed;
-        ocean.WindDirection = new Vector2(Mathf.Cos(windDirection), Mathf.Sin(windDirection));
-        ocean.Turbulence = turbulence;
+        void Start()
+        {
+            ocean = GetComponent<Ocean>();
+        }
 
-        ocean.UpdateOnDemandDataBuffer();
+        void Update()
+        {
+            float t = Time.timeSinceLevelLoad * timeScale;
+
+            windSpeed = 11f + Mathf.Sin(t * 0.01f) * 10f;
+            windDirection = Mathf.Sin(t * 0.001f) * Mathf.PI;
+            turbulence = Mathf.Sin(t * 0.005f + 4.33f) * 0.2f + 0.3f;
+
+            ocean.WindSpeed = windSpeed;
+            ocean.WindDirection = new Vector2(Mathf.Cos(windDirection), Mathf.Sin(windDirection));
+            ocean.Turbulence = turbulence;
+
+            ocean.UpdateOnDemandDataBuffer();
+        }
     }
 }

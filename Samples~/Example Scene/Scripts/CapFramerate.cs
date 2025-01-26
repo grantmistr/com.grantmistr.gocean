@@ -1,12 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class CapFramerate : MonoBehaviour
+namespace GOcean
 {
-    public int frameRate = 30;
-    private void Start()
+    public class CapFramerate : MonoBehaviour
     {
-        Application.targetFrameRate = frameRate;
+        public int frameRate = 60;
+        private void Start()
+        {
+            Application.targetFrameRate = frameRate;
+        }
     }
 }
