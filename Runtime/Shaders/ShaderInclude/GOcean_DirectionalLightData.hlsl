@@ -1,12 +1,12 @@
 ﻿#ifndef GOCEAN_DIRECTIONAL_LIGHT_DATA
 #define GOCEAN_DIRECTIONAL_LIGHT_DATA
 
+// copied from LightDefinition.cs.hlsl and ShaderVariablesLightLoop.hlsl
+
 struct DirectionalLightData
 {
     float3 positionRWS;
     uint lightLayers;
-    float lightDimmer;
-    float volumetricLightDimmer;
     float3 forward;
     int cookieMode;
     float4 cookieScaleOffset;
@@ -23,21 +23,14 @@ struct DirectionalLightData
     float minRoughness;
     int screenSpaceShadowIndex;
     float4 shadowMaskSelector;
-    float2 cascadesBorderFadeScaleBias;
     float diffuseDimmer;
     float specularDimmer;
+    float lightDimmer;
+    float volumetricLightDimmer;
     float penumbraTint;
     float isRayTracedContactShadow;
-    float distanceFromCamera;
     float angularDiameter;
-    float flareFalloff;
-    float flareCosInner;
-    float flareCosOuter;
-    float __unused__;
-    float3 flareTint;
-    float flareSize;
-    float3 surfaceTint;
-    float4 surfaceTextureScaleOffset;
+    float distanceFromCamera;
 };
 
 StructuredBuffer<DirectionalLightData> _DirectionalLightDatas;

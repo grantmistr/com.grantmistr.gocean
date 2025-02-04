@@ -6,7 +6,7 @@
 
 float4 vert(uint vertexID : SV_VertexID) : SV_Position
 {
-    return GetFullScreenTriVertexPosition(vertexID, 0.0);
+    return GetFullScreenTriVertexPosition(vertexID, GetNearClipValue());
 }
 
 float4 frag(float4 position : SV_Position, out float outputDepth : SV_Depth) : SV_Target
@@ -36,10 +36,10 @@ float4 frag(float4 position : SV_Position, out float outputDepth : SV_Depth) : S
     bool inSquare = IsInSquare(_CameraPositionStepped.xy, _ChunkGridResolution * _ChunkSize, uvWS);
     bool mask = oceanHeightMask ? !hemisphereMask : hemisphereMask;
     
-#if UNITY_REVERED_Z
-    bool isNotFarPlane = (posCS.z + 0.00000001) < 1.0;
+#if UNITY_REVERSED_Z
+    bool isNotFarPlane = (posCS.z + 0.00000001) > 0.0;
 #else
-    bool isNotFarPlane = (posCS.z - 0.00000001) > 0.0;
+    bool isNotFarPlane = (posCS.z - 0.00000001) < 1.0;
 #endif
     
     if (mask || (inSquare && isNotFarPlane))
@@ -49,7 +49,7 @@ float4 frag(float4 position : SV_Position, out float outputDepth : SV_Depth) : S
     
     outputDepth = saturate(posCS.z / posCS.w);
     
-    return float4(0.0, 1.0, 0.0, 0.0);
+    return float4(0.0, 0.0, 0.0, -1.0);
 }
 
 #endif

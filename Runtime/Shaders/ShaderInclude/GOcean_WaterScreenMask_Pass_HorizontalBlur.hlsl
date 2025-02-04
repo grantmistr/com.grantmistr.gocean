@@ -6,14 +6,15 @@
 
 float4 vert(uint vertexID : SV_VertexID) : SV_Position
 {
-    return GetFullScreenTriVertexPosition(vertexID, 0.0);
+    return GetFullScreenTriVertexPosition(vertexID, GetNearClipValue());
 }
 
 float4 frag(float4 input : SV_Position) : SV_Target
 {
     int2 sampleCoord = (int2) input.xy;
     int2 maxCoord = ((int2) _ScreenSize.xy) - 1;
-    float4 prevFrameSample = _OceanScreenTexture[sampleCoord];
+    float2 screenTextureSample = _TemporaryBlurTexture[sampleCoord];
+    float lightRays = screenTextureSample.x;
     float opaqueDepth = _CameraDepthTexture[uint3(sampleCoord, 0)];
     float waterDepth = _WaterDepthTexture[sampleCoord];
 #ifdef UNITY_REVERSED_Z
@@ -32,7 +33,7 @@ float4 frag(float4 input : SV_Position) : SV_Target
         c.x += i - blurOffset;
         c.x = clamp(c.x, 0, maxCoord.x);
         
-        float2 s = _OceanScreenTexture[c].yz;
+        float2 s = _TemporaryBlurTexture[c];
         
         float opaqueDepth0 = _CameraDepthTexture[uint3(c, 0)];
         float waterDepth0 = _WaterDepthTexture[c];
@@ -43,12 +44,13 @@ float4 frag(float4 input : SV_Position) : SV_Target
 #endif
         float viewDepth0 = RawToViewDepth(depth0, _ZBufferParams);
         
-        s.x = lerp(s.x, prevFrameSample.y, saturate(abs(viewDepth - viewDepth0) / (depthDeltaThresholdMultiplier * viewDepth0 * viewDepth0)));
+        s.x = lerp(s.x, lightRays, saturate(abs(viewDepth - viewDepth0) / (depthDeltaThresholdMultiplier * viewDepth0 * viewDepth0)));
         
         sum += s * weights[i];
     }
     
-    return float4(prevFrameSample.x, sum.x, prevFrameSample.z, sum.y);
+    // write to temp color tex BA
+    return float4(0.0, 0.0, sum);
 }
 
 #endif // GOCEAN_WATERSCREENMASK_PASS_HORIZONTALBLUR

@@ -4,6 +4,8 @@
     #ifndef SHADERVARIABLESGLOBAL_CS_HLSL
         #define SHADERVARIABLESGLOBAL_CS_HLSL
 
+        #define RENDERING_LAYERS_MASK (65535)
+
         // so in ShaderVariablesGlobal.cs.hlsl this is in register(b0) but that didn't work for me :(
         cbuffer ShaderVariablesGlobal
         {

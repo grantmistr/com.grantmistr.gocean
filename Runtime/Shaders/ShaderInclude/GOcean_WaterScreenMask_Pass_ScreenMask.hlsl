@@ -5,22 +5,23 @@
 #include "GOcean_HelperFunctions.hlsl"
 #include "GOcean_GetTrisFromBuffer.hlsl"
 
-float4 vert(uint vertexID : SV_VertexID) : SV_Position
+v2f vert(uint vertexID : SV_VertexID)
 {
+    v2f o;
+    
+    float2 preDisplacedPositionXZ;
     float3 displacedPosition;
-    GetVertexDisplacedPositionFromTri(vertexID, displacedPosition);
+    GetVertexFromTri(vertexID, preDisplacedPositionXZ, displacedPosition);
     
-    displacedPosition -= _WorldSpaceCameraPos_Internal.xyz;
+    o.preDisplacedPositionXZ = preDisplacedPositionXZ;
+    o.position = mul(_ViewProjMatrix, float4(displacedPosition, 1.0));
     
-    return mul(_ViewProjMatrix, float4(displacedPosition, 1.0));
+    return o;
 }
 
-float4 frag(float4 i : SV_Position, bool facing : SV_IsFrontFace) : SV_Target
+float4 frag(v2f i, bool facing : SV_IsFrontFace) : SV_Target
 {
-    // flip facing - want underwater to be white
-    float f = facing ? 0.0 : 1.0;
-    
-    return float4(f, 1.0, 0.0, 0.0);
+    return float4(i.preDisplacedPositionXZ, facing ? 0.0 : 1.0, 1.0);
 }
 
 #endif // GOCEAN_WATERSCREENMASK_PASS_FACING

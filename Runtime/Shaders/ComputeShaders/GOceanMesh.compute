@@ -22,7 +22,6 @@ RWByteAddressBuffer _VertexBuffer;
 RWByteAddressBuffer _IndirectArgsBuffer;
 
 Texture2DArray<float4> _SpectrumTexture;
-SamplerState sampler_SpectrumTexture;
 
 float   _TessellationFalloff, _TessellationOffset, _DisplacementMaxDistance, _DisplacementFalloff, _CullPadding,
         _ShoreWaveStartDepth, _HeightmapOffset, _MaxAmplitude;
@@ -44,18 +43,25 @@ void ResetIndirectArgsBuffer(uint3 id : SV_DispatchThreadID)
     _IndirectArgsBuffer.Store(SUB_CHUNK_COUNT_RW_LOCATION, 0);
 }
 
+float GetVerticalPositionOffset(float3 cameraPosition)
+{
+    return _WaterHeight - cameraPosition.y;
+}
+
 float3 GetMeshDisplacedPosition(float2 position)
 {
-    float displacementDistanceSqr = DistanceSquared(position, _WorldSpaceCameraPos_Internal.xz);
-    float displacementDistance = _WaterHeight - _WorldSpaceCameraPos_Internal.y;
-    displacementDistance = sqrt(displacementDistanceSqr + displacementDistance * displacementDistance);
+    float2 positionWS = position + _WorldSpaceCameraPos_Internal.xz;
+    
+    float displacementDistanceSqr = LengthSquared(position);
+    float verticalOffset = GetVerticalPositionOffset(_WorldSpaceCameraPos_Internal.xyz);
+    float displacementDistance = sqrt(displacementDistanceSqr + verticalOffset * verticalOffset);
     
     float3 displacementSample;
-    displacementSample = _SpectrumTexture.SampleLevel(sampler_SpectrumTexture, float3(position / _PatchSize.x, 0.0), 0.0).xyz;
-    displacementSample += _SpectrumTexture.SampleLevel(sampler_SpectrumTexture, float3(position / _PatchSize.y, 2.0), 0.0).xyz;
-    displacementSample += _SpectrumTexture.SampleLevel(sampler_SpectrumTexture, float3(position / _PatchSize.z, 4.0), 0.0).xyz;
-    displacementSample += _SpectrumTexture.SampleLevel(sampler_SpectrumTexture, float3(position / _PatchSize.w, 6.0), 0.0).xyz;
-    float3 displacementSampleStochastic = StochasticSampleLevel(_SpectrumTexture, sampler_SpectrumTexture, position / _PatchSize.x, 8.0, 0.0).xyz;
+    displacementSample =  _SpectrumTexture.SampleLevel(sampler_Linear_Repeat, float3(positionWS / _PatchSize.x, 0.0), 0.0).xyz;
+    displacementSample += _SpectrumTexture.SampleLevel(sampler_Linear_Repeat, float3(positionWS / _PatchSize.y, 2.0), 0.0).xyz;
+    displacementSample += _SpectrumTexture.SampleLevel(sampler_Linear_Repeat, float3(positionWS / _PatchSize.z, 4.0), 0.0).xyz;
+    displacementSample += _SpectrumTexture.SampleLevel(sampler_Linear_Repeat, float3(positionWS / _PatchSize.w, 6.0), 0.0).xyz;
+    float3 displacementSampleStochastic = StochasticSampleLevel(_SpectrumTexture, sampler_Linear_Repeat, positionWS / _PatchSize.x, 8.0, 0.0).xyz;
     float displacementTransition = saturate(displacementDistance / min(min(_ProjectionParams.z, _DisplacementMaxDistance), _PatchSize.x));
     displacementSample = lerp(displacementSample, displacementSampleStochastic, displacementTransition * displacementTransition);
     
@@ -63,7 +69,7 @@ float3 GetMeshDisplacedPosition(float2 position)
     int slice;
     float2 terrainUV;
     bool valid;
-    GetTerrainSamplingData(position, _TerrainSize, _TerrainPosScaledBounds, float2(0.0, 0.0), _UVMultiplier,
+    GetTerrainSamplingData(positionWS, _TerrainSize, _TerrainPosScaledBounds, float2(0.0, 0.0), _UVMultiplier,
     _TerrainLookupCoordOffset, _TerrainLookupResolution, _ValidTerrainHeightmapMask,
     slice, terrainUV, valid);
     
@@ -90,7 +96,8 @@ float3 GetMeshDisplacedPosition(float2 position)
     displacementSample *= saturate((1.0 - displacementDistance / min(max(_ProjectionParams.z - _ChunkSize * SQRT_2, 0.001), _DisplacementMaxDistance)) * _DisplacementFalloff);
     
     displacementSample.x += position.x;
-    displacementSample.y += _WaterHeight;
+    //displacementSample.y += _WaterHeight;
+    displacementSample.y += verticalOffset;
     displacementSample.z += position.y;
     
     return displacementSample;
@@ -108,7 +115,7 @@ float2 GetSteppedCameraPos(float2 cameraPosition, float chunkSize)
 // no need to test far plane clipping, unless chunk size or falloff values are extreme
 bool IsChunkVisible(float3 position, float radius)
 {
-    position -= _WorldSpaceCameraPos_Internal.xyz;
+    //position -= _WorldSpaceCameraPos_Internal.xyz;
     
     bool notVisible = false;
     
@@ -176,7 +183,7 @@ float2 GetChunkPosition(float2 id, float centerCoord)
 {
     float2 chunkPosition = id - centerCoord;
     chunkPosition *= (float) _ChunkSize;
-    chunkPosition += _CameraPositionStepped.xy;
+    chunkPosition -= _CameraPositionStepped.zw;
     
     return chunkPosition;
 }
@@ -356,7 +363,7 @@ bool IsZeroAreaTriangle(Vertex vertices[3])
     float3 averagePosition = (vertices[0].position + vertices[1].position + vertices[2].position) / 3.0;
     
     // view dir
-    float3 V = normalize(averagePosition - _WorldSpaceCameraPos_Internal.xyz);
+    float3 V = normalize(averagePosition);
     
     // true if view direction and triangle normal are perpendicular
     return (abs(dot(normal, V)) < 0.0005);
@@ -477,13 +484,13 @@ void FillUnderwaterMaskVertices(uint3 id : SV_GroupThreadID)
     [unroll(2)]
     for (uint i = 0; i < 2; i++)
     {
-        float2 preDisplacedVertex = underwaterMaskVertices[(id.x + i) % 4] * scale + _WorldSpaceCameraPos_Internal.xz;
-        float3 vertex = float3(preDisplacedVertex.x, _WaterHeight, preDisplacedVertex.y);
+        float2 preDisplacedVertex = underwaterMaskVertices[(id.x + i) % 4] * scale;// + _WorldSpaceCameraPos_Internal.xz;
+        float3 vertex = float3(preDisplacedVertex.x, GetVerticalPositionOffset(_WorldSpaceCameraPos_Internal.xyz), preDisplacedVertex.y);
         _VertexBuffer.Store3(writeAddress + VERTEX_SIZE_BYTE * i + VERTEX_PREDISPLACED_POSITION_XZ_SIZE_BYTE, asuint(vertex));
     }
         
     {
-        float3 vertex = float3(_WorldSpaceCameraPos_Internal.x, _WaterHeight - _MaxAmplitude * 2.0, _WorldSpaceCameraPos_Internal.z);
+        float3 vertex = float3(0.0, -_MaxAmplitude * 2.0, 0.0);
         _VertexBuffer.Store3(writeAddress + VERTEX_SIZE_BYTE * 2 + VERTEX_PREDISPLACED_POSITION_XZ_SIZE_BYTE, asuint(vertex));
     }
     

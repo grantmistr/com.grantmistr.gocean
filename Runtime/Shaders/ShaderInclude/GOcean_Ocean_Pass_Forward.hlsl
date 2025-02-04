@@ -10,141 +10,19 @@
 #ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/MotionVectorVertexShaderCommon.hlsl"
 
-PackedVaryingsType Vert(uint vertexID : SV_VertexID
-#if UNITY_ANY_INSTANCING_ENABLED || defined(ATTRIBUTES_NEED_INSTANCEID)
-, uint instanceID : SV_InstanceID
-#endif
-, AttributesPass inputPass
-)
+float4 Vert(uint vertexID : SV_VertexID) : SV_Position
 {
-    // Fill AttributesMesh with data from buffer or default values
-    AttributesMesh inputMesh;
-    inputMesh.positionOS = 0.0;
-    
-#ifdef ATTRIBUTES_NEED_VERTEXID
-    inputMesh.vertexID = vertexID;
-#endif
-#ifdef ATTRIBUTES_NEED_TEXCOORD0
-    inputMesh.uv0 = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_TEXCOORD1
-    inputMesh.uv1 = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_TEXCOORD2
-    inputMesh.uv2 = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_TEXCOORD3
-    inputMesh.uv3 = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_NORMAL
-    inputMesh.normalOS = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_TANGENT
-    inputMesh.tangentOS = 0.0;
-#endif
-#if UNITY_ANY_INSTANCING_ENABLED || defined(ATTRIBUTES_NEED_INSTANCEID)
-    inputMesh.instanceID = instanceID;
-#endif
-
-    VaryingsType varyingsType;
-#ifdef HAVE_VFX_MODIFICATION
-    AttributesElement inputElement;
-    varyingsType.vmesh = VertMesh(inputMesh, inputElement);
-    return MotionVectorVS(varyingsType, inputMesh, inputPass, inputElement);
-#else
-    varyingsType.vmesh = VertMesh(inputMesh);
-    return MotionVectorVS(varyingsType, inputMesh, inputPass);
-#endif
+    return GetFullScreenTriangleVertexPosition(vertexID, UNITY_NEAR_CLIP_VALUE);
 }
-
-#ifdef TESSELLATION_ON
-
-PackedVaryingsToPS VertTesselation(VaryingsToDS input)
-{
-    VaryingsToPS output;
-    output.vmesh = VertMeshTesselation(input.vmesh);
-    return MotionVectorTessellation(output, input);
-}
-
-#endif // TESSELLATION_ON
 
 #else // _WRITE_TRANSPARENT_MOTION_VECTOR
 
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/VertMesh.hlsl"
-
-PackedVaryingsType Vert(uint vertexID : SV_VertexID
-#if UNITY_ANY_INSTANCING_ENABLED || defined(ATTRIBUTES_NEED_INSTANCEID)
-, uint instanceID : SV_InstanceID
-#endif
-)
+float4 Vert(uint vertexID : SV_VertexID) : SV_Position
 {
-    // Fill AttributesMesh with data from buffer or default values
-    AttributesMesh inputMesh;
-    inputMesh.positionOS = 0.0;
-    
-#ifdef ATTRIBUTES_NEED_VERTEXID
-    inputMesh.vertexID = vertexID;
-#endif
-#ifdef ATTRIBUTES_NEED_TEXCOORD0
-    inputMesh.uv0 = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_TEXCOORD1
-    inputMesh.uv1 = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_TEXCOORD2
-    inputMesh.uv2 = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_TEXCOORD3
-    inputMesh.uv3 = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_NORMAL
-    inputMesh.normalOS = 0.0;
-#endif
-#ifdef ATTRIBUTES_NEED_TANGENT
-    inputMesh.tangentOS = 0.0;
-#endif
-#if UNITY_ANY_INSTANCING_ENABLED || defined(ATTRIBUTES_NEED_INSTANCEID)
-    inputMesh.instanceID = instanceID;
-#endif
-    
-    VaryingsType varyingsType;
-
-#if defined(HAVE_RECURSIVE_RENDERING)
-    // If we have a recursive raytrace object, we will not render it.
-    // As we don't want to rely on renderqueue to exclude the object from the list,
-    // we cull it by settings position to NaN value.
-    // TODO: provide a solution to filter dyanmically recursive raytrace object in the DrawRenderer
-    if (_EnableRecursiveRayTracing && _RayTracing > 0.0)
-    {
-        ZERO_INITIALIZE(VaryingsType, varyingsType); // Divide by 0 should produce a NaN and thus cull the primitive.
-    }
-    else
-#endif
-    {
-        varyingsType.vmesh = VertMesh(inputMesh);
-    }
-
-    return PackVaryingsType(varyingsType);
+    return GetFullScreenTriangleVertexPosition(vertexID, UNITY_NEAR_CLIP_VALUE);
 }
-
-#ifdef TESSELLATION_ON
-
-PackedVaryingsToPS VertTesselation(VaryingsToDS input)
-{
-    VaryingsToPS output;
-    output.vmesh = VertMeshTesselation(input.vmesh);
-
-    return PackVaryingsToPS(output);
-}
-
-#endif // TESSELLATION_ON
 
 #endif // _WRITE_TRANSPARENT_MOTION_VECTOR
-
-
-#ifdef TESSELLATION_ON
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/TessellationShare.hlsl"
-#endif
 
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplayMaterial.hlsl"
 
@@ -158,10 +36,7 @@ PackedVaryingsToPS VertTesselation(VaryingsToDS input)
 //Anything using Target1 should write 1.0 or 0.0 in alpha to write / not write into the target.
 
 #ifdef UNITY_VIRTUAL_TEXTURING
-    #ifdef OUTPUT_SPLIT_LIGHTING
-        #define DIFFUSE_LIGHTING_TARGET SV_Target2
-        #define SSS_BUFFER_TARGET SV_Target3
-    #elif defined(_WRITE_TRANSPARENT_MOTION_VECTOR)
+    #if defined(_WRITE_TRANSPARENT_MOTION_VECTOR)
         #define MOTION_VECTOR_TARGET SV_Target2
         #ifdef _TRANSPARENT_REFRACTIVE_SORT
             #define BEFORE_REFRACTION_TARGET SV_Target3
@@ -175,10 +50,7 @@ PackedVaryingsToPS VertTesselation(VaryingsToDS input)
         #pragma PSSL_target_output_format(target 1 FMT_32_ABGR)
     #endif
 #else
-    #ifdef OUTPUT_SPLIT_LIGHTING
-        #define DIFFUSE_LIGHTING_TARGET SV_Target1
-        #define SSS_BUFFER_TARGET SV_Target2
-    #elif defined(_WRITE_TRANSPARENT_MOTION_VECTOR)
+    #if defined(_WRITE_TRANSPARENT_MOTION_VECTOR)
         #define MOTION_VECTOR_TARGET SV_Target1
         #ifdef _TRANSPARENT_REFRACTIVE_SORT
             #define BEFORE_REFRACTION_TARGET SV_Target2
@@ -187,26 +59,28 @@ PackedVaryingsToPS VertTesselation(VaryingsToDS input)
     #endif
 #endif
 
-void Frag(PackedVaryingsToPS packedInput
+void Frag(float4 iVertex : SV_Position
     , out float4 outColor : SV_Target0  // outSpecularLighting when outputting split lighting
     #ifdef UNITY_VIRTUAL_TEXTURING
         , out float4 outVTFeedback : SV_Target1
     #endif
-    #ifdef OUTPUT_SPLIT_LIGHTING
-        , out float4 outDiffuseLighting : DIFFUSE_LIGHTING_TARGET
-        , OUTPUT_SSSBUFFER(outSSSBuffer) : SSS_BUFFER_TARGET
-    #elif defined(_WRITE_TRANSPARENT_MOTION_VECTOR)
+    #if defined(_WRITE_TRANSPARENT_MOTION_VECTOR)
           , out float4 outMotionVec : MOTION_VECTOR_TARGET
         #ifdef _TRANSPARENT_REFRACTIVE_SORT
           , out float4 outBeforeRefractionColor : BEFORE_REFRACTION_TARGET
           , out float4 outBeforeRefractionAlpha : BEFORE_REFRACTION_ALPHA_TARGET
         #endif
     #endif
-    #ifdef _DEPTHOFFSET_ON
         , out float outputDepth : DEPTH_OFFSET_SEMANTIC
-    #endif
 )
 {
+    uint oceanScreenTextureSample = _OceanScreenTexture[iVertex.xy];
+    
+    if (!GetWaterSurfaceMask(oceanScreenTextureSample))
+    {
+        discard;
+    }
+    
 #ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
     // Init outMotionVector here to solve compiler warning (potentially unitialized variable)
     // It is init to the value of forceNoMotion (with 2.0)
@@ -215,9 +89,32 @@ void Frag(PackedVaryingsToPS packedInput
     outMotionVec = float4(2.0, 0.0, 0.0, 1.0);
 #endif
 
-    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(packedInput);
-    FragInputs input = UnpackVaryingsToFragInputs(packedInput);
+    FragInputs input;
+    
+    // ========== //
+    
+    float waterDepth = saturate(_WaterDepthTexture[iVertex.xy]);
+
+    float4 posNDC = float4(iVertex.xy / _ScreenSize.xy, 1.0, 1.0);
+    float4 posCS = float4(posNDC.xy * 2.0 - 1.0, waterDepth, 1.0);
+#if UNITY_UV_STARTS_AT_TOP
+    posCS.y = -posCS.y;
+#endif
+    float4 posRWS = mul(_InvViewProjMatrix, posCS);
+    posRWS.xyz /= posRWS.w;
+    
+    input.positionSS = float4(iVertex.xy, waterDepth, LinearEyeDepth(waterDepth, _ZBufferParams));
+    input.positionRWS = posRWS.xyz;
+    input.positionPredisplacementRWS = input.positionRWS;
+    input.positionPixel = input.positionSS.xy;
+    input.texCoord1 = 0;
+    input.texCoord2 = 0;
+    input.color = 0;
     input.tangentToWorld = M_3x3_identity;
+    input.primitiveID = 0;
+    input.isFrontFace = !GetUnderwaterMask(oceanScreenTextureSample);
+    
+    // ========== //
     
     AdjustFragInputsToOffScreenRendering(input, _OffScreenRendering > 0, _OffScreenDownsampleFactor);
 
@@ -226,12 +123,7 @@ void Frag(PackedVaryingsToPS packedInput
     // input.positionSS is SV_Position
     PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw, input.positionSS.z, input.positionSS.w, input.positionRWS.xyz, tileIndex);
 
-#ifdef VARYINGS_NEED_POSITION_WS
     float3 V = GetWorldSpaceNormalizeViewDir(input.positionRWS);
-#else
-    // Unused
-    float3 V = float3(1.0, 1.0, 1.0); // Avoid the division by 0
-#endif
 
     SurfaceData surfaceData;
     BuiltinData builtinData;
@@ -247,12 +139,6 @@ void Frag(PackedVaryingsToPS packedInput
 
 #ifdef DEBUG_DISPLAY
     // Init in debug display mode to quiet warning
-#ifdef OUTPUT_SPLIT_LIGHTING
-    // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
-    // Diffuse output is expected to be RGB10, so alpha must always be 1 to ensure it is written.
-    outDiffuseLighting = float4(0, 0, 0, 1);
-    ENCODE_INTO_SSSBUFFER(surfaceData, posInput.positionSS, outSSSBuffer);
-#endif
 
     bool viewMaterial = GetMaterialDebugColor(outColor, input, builtinData, posInput, surfaceData, bsdfData);
 
@@ -274,11 +160,7 @@ void Frag(PackedVaryingsToPS packedInput
         else
 #endif
         {
-#ifdef _SURFACE_TYPE_TRANSPARENT
             uint featureFlags = LIGHT_FEATURE_MASK_FLAGS_TRANSPARENT;
-#else
-            uint featureFlags = LIGHT_FEATURE_MASK_FLAGS_OPAQUE;
-#endif
         
             LightLoopOutput lightLoopOutput;
             LightLoop(V, posInput, preLightData, bsdfData, builtinData, featureFlags, lightLoopOutput);
@@ -290,23 +172,6 @@ void Frag(PackedVaryingsToPS packedInput
             diffuseLighting *= GetCurrentExposureMultiplier();
             specularLighting *= GetCurrentExposureMultiplier();
         
-#ifdef OUTPUT_SPLIT_LIGHTING
-            if (_EnableSubsurfaceScattering != 0 && ShouldOutputSplitLighting(bsdfData))
-            {
-                outColor = float4(specularLighting, 1.0);
-                // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
-                // Diffuse output is expected to be RGB10, so alpha must always be 1 to ensure it is written.
-                outDiffuseLighting = float4(TagLightingForSSS(diffuseLighting), 1.0);
-            }
-            else
-            {
-                outColor = float4(diffuseLighting + specularLighting, 1.0);
-                // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
-                // Diffuse output is expected to be RGB10, so alpha must always be 1 to ensure it is written.
-                outDiffuseLighting = float4(0, 0, 0, 1);
-            }
-            ENCODE_INTO_SSSBUFFER(surfaceData, posInput.positionSS, outSSSBuffer);
-#else
             outColor = ApplyBlendMode(diffuseLighting, specularLighting, builtinData.opacity);
 
             #ifdef _ENABLE_FOG_ON_TRANSPARENT
@@ -324,17 +189,11 @@ void Frag(PackedVaryingsToPS packedInput
             float3 underWaterFogColor = CalculateUnderwaterFogColor(_UnderwaterFogColor.xyz, skyColor, GetCurrentExposureMultiplier());
         
             outColor.xyz = lerp(outColor.xyz, underWaterFogColor, underwaterFogMask);
-#endif
 
 #ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
             VaryingsPassToPS inputPass = UnpackVaryingsPassToPS(packedInput.vpass);
             bool forceNoMotion = any(unity_MotionVectorsParams.yw == 0.0);
             // outMotionVec is already initialize at the value of forceNoMotion (see above)
-
-             //Motion vector is enabled in SG but not active in VFX
-#if defined(HAVE_VFX_MODIFICATION) && !VFX_FEATURE_MOTION_VECTORS
-            forceNoMotion = true;
-#endif
 
             if (!forceNoMotion)
             {
@@ -352,9 +211,7 @@ void Frag(PackedVaryingsToPS packedInput
     }
 #endif
 
-#ifdef _DEPTHOFFSET_ON
     outputDepth = posInput.deviceDepth;
-#endif
 
 #ifdef UNITY_VIRTUAL_TEXTURING
     float vtAlphaValue = builtinData.opacity;

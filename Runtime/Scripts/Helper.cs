@@ -46,8 +46,8 @@ namespace GOcean
 
             float x = Mathf.Floor(camera.transform.position.x / stepSize) * stepSize + halfStep;
             float y = Mathf.Floor(camera.transform.position.z / stepSize) * stepSize + halfStep;
-            float z = camera.transform.position.x % chunkSize;
-            float w = camera.transform.position.y % chunkSize;
+            float z = NoNegativeMod(camera.transform.position.x, stepSize) - halfStep;
+            float w = NoNegativeMod(camera.transform.position.z, stepSize) - halfStep;
 
             return new Vector4(x, y, z, w);
         }

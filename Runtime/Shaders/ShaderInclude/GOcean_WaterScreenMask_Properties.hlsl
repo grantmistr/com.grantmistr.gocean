@@ -5,6 +5,12 @@
 #include "GOcean_HDRP_ShaderVariablesGlobal.hlsl"
 #include "GOcean_GlobalTextures.hlsl"
 
+struct v2f
+{
+    float4 position : SV_Position;
+    float2 preDisplacedPositionXZ : TEXCOORD0;
+};
+
 const static int blurIterations = 11;
 const static int blurOffset = blurIterations >> 1;
 const static float depthDeltaThresholdMultiplier = 0.01;

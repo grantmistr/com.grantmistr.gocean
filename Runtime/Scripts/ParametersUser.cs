@@ -66,11 +66,11 @@ namespace GOcean
             if (diffusionProfile == null)
             {
                 ResourceRequest request = Resources.LoadAsync<DiffusionProfileSettings>(DIFFUSION_PROFILE_RESOURCE_STRING);
-                request.completed += OnCompletedRequest;
+                request.completed += OnCompletedDefaultDiffusionProfileRequest;
             }
         }
 
-        private void OnCompletedRequest(AsyncOperation a)
+        private void OnCompletedDefaultDiffusionProfileRequest(AsyncOperation a)
         {
             DiffusionProfileSettings defaultDiffusionProfile = (a as ResourceRequest).asset as DiffusionProfileSettings;
 
@@ -106,23 +106,23 @@ namespace GOcean
     [System.Serializable]
     public class DisplacementParamsUser : BaseParamsUser
     {
-        public Resolution spectrumTextureResolution = Resolution._256;
+        public Resolution spectrumTextureResolution = Resolution._512;
         [Min(0f)]
         public float gravity = 9.81f;
         [Min(0f)]
         public float speed = 1f;
         [Min(0f)]
-        public float amplitude = 2f;
+        public float amplitude = 0.5f;
         [Tooltip("Slightly lowering Steepness below 1 can alleviate wave crest loops.")]
         [Range(0f, 1f)]
-        public float steepness = 0.92f;
+        public float steepness = 0.8f;
         [Range(0f, 1f)]
-        public float turbulence = 0.3f;
+        public float turbulence = 0.2f;
         [Range(0f, 1f)]
         public float smoothing = 0f;
         [Tooltip("Size of the largest spectrum in the world units.")]
         [Min(1f)]
-        public float maxPatchSize = 512f;
+        public float maxPatchSize = 1024f;
         [Tooltip("Scale ratio of a spectrum with MaxPatchSize. MaxPatchSize divided by this value to get the size of the spectrum.")]
         public PatchScaleRatios patchScaleRatios = new PatchScaleRatios(1f, 2.1f, 3.9f, 9f);
         [Tooltip("Low wave frequency cutoff. No waves simulated with a frequency below this value.")]
@@ -130,7 +130,7 @@ namespace GOcean
         public float lowWaveCutoff = 0.015f;
         [Tooltip("High wave frequency cutoff. No waves simulated with a frequency above this value.")]
         [Min(0f)]
-        public float highWaveCutoff = 20f;
+        public float highWaveCutoff = 100f;
 
         public override void Update(ComponentContainer components)
         {
@@ -145,21 +145,21 @@ namespace GOcean
         [Min(0f)]
         public float normalStrength = 1f;
         [Range(0f, 1f)]
-        public float smoothness = 0.94f;
+        public float smoothness = 0.9f;
         [Tooltip("Smoothness of distant water.")]
         [Range(0f, 1f)]
         public float distantSmoothness = 0.7f;
         [Tooltip("Distance from camera at which the water will be fully transitioned to distant smoothness value.")]
         [Min(0f)]
-        public float smoothnessTransitionDistance = 1000f;
-        public float refractionStrength = 6f;
+        public float smoothnessTransitionDistance = 2000f;
+        public float refractionStrength = 5f;
         [ColorUsage(true, true)]
-        public Color waterColor = new Color(0.124822f, 0.3305785f, 0.4811321f);
+        public Color waterColor = new Color(0.3915094f, 0.70573f, 1f);
         [Tooltip("Luminance of this color is equal to the diffusion profile radius multiplier.")]
         [ColorUsage(true, true)]
-        public Color scatteringColor;
+        public Color scatteringColor = new Color(0.2520915f, 0.3896481f, 0.5188679f);
         [Min(1f)]
-        public float scatteringFalloff = 6f;
+        public float scatteringFalloff = 5f;
 
         public override void Update(ComponentContainer components)
         {
@@ -198,7 +198,7 @@ namespace GOcean
         [Tooltip("Raising this value increases how much of a wave foam will spawn on.")]
         public float foamBias = -0.2f;
         [Min(0f)]
-        public float foamAccumulationRate = 2f;
+        public float foamAccumulationRate = 1f;
 
         public override void Update(ComponentContainer components)
         {
@@ -225,7 +225,7 @@ namespace GOcean
         public float shoreWaveHeight = 0.5f;
         public float shoreWaveSpeed = 0.15f;
         [Min(0f)]
-        public float shoreWaveNoiseStrength = 0.03f;
+        public float shoreWaveNoiseStrength = 0.02f;
         [Min(0f)]
         public float shoreWaveNoiseScale = 3f;
         public float shoreWaveNormalStrength = 0.5f;
@@ -248,7 +248,7 @@ namespace GOcean
         public float screenWaterTiling = 0.2f;
         [Tooltip("Behavior of fading water can be quite different in editor versus play mode.")]
         [Min(1f)]
-        public float screenWaterFadeSpeed = 1.2f;
+        public float screenWaterFadeSpeed = 1.3f;
 
         public override void Update(ComponentContainer components)
         {
@@ -266,7 +266,7 @@ namespace GOcean
         [Tooltip("Strength of chromatic aberration type effect.")]
         public float causticDistortion = 0.002f;
         [Min(0f)]
-        public float causticDefinition = 12f;
+        public float causticDefinition = 10f;
         [Tooltip("Underwater depth at which caustics (and light rays) will fade out.")]
         [Min(1f)]
         public float causticFadeDepth = 400f;
@@ -284,23 +284,23 @@ namespace GOcean
     [System.Serializable]
     public class UnderwaterParamsUser : BaseParamsUser
     {
-        public Color underwaterFogColor = new Color(0.6556604f, 0.8524258f, 1f);
+        public Color underwaterFogColor = new Color(0.6179246f, 0.8031732f, 1f);
         [Min(0f)]
         public float underwaterFogFadeDistance = 150f;
-        [Min(0f)]
-        public float underwaterSurfaceEmissionStrength = 50f;
+        [Range(0f, 500f)]
+        public float underwaterSurfaceEmissionStrength = 30f;
         [Range(0f, 1f)]
-        public float lightRayShadowMultiplier = 0.6f;
+        public float lightRayShadowMultiplier = 0.5f;
         [Min(0f)]
-        public float lightRayTiling = 2f;
+        public float lightRayTiling = 1f;
         [Range(0f, 3f)]
-        public float lightRayDefinition = 1f;
+        public float lightRayDefinition = 1.25f;
         [Tooltip("Light rays fade in from camera near clip plane.")]
         [Min(1f)]
         public float lightRayFadeInDistance = 1f;
         [Min(1f)]
         public float maxSliceDepth = 100f;
-        [Min(1f)]
+        [Min(0.01f)]
         public float minSliceDepth = 1f;
 
         public override void Update(ComponentContainer components)
@@ -314,20 +314,20 @@ namespace GOcean
     public class MeshParamsUser : BaseParamsUser
     {
         [Range(1, 1000)]
-        public int chunkSize = 30;
+        public int chunkSize = 90;
         [Range(3, 1000)]
-        public int chunkGridResolution = 90;
+        public int chunkGridResolution = 30;
         [Tooltip("There really is no reason to lower this value. Control the tessellation using chunk size and chunk grid resolution.")]
         [Range(0, Mesh.MAX_SUPPORTED_TESSELLATION_LEVEL)]
         public int maxTessellation = Mesh.MAX_SUPPORTED_TESSELLATION_LEVEL;
         [Range(0f, 1f)]
-        public float tessellationFalloff = 0.6f;
+        public float tessellationFalloff = 0.8f;
         [Range(0f, Mesh.MAX_SUPPORTED_TESSELLATION_LEVEL)]
         public float tessellationOffset = 0f;
         public float cullPadding = 0f;
         [Tooltip("How gradual mesh displacement will flatten to match distant water plane. Lower values are more gradual.")]
         [Min(1f)]
-        public float displacementFalloff = 2f;
+        public float displacementFalloff = 3f;
         [Tooltip("Won't show up in build.")]
         public bool drawWireframe = false;
 

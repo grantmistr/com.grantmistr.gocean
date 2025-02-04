@@ -138,6 +138,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _TemporaryBlurTexture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _TemporaryColorTexture:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -236,13 +240,13 @@ Material:
     - _Ior: 1.5
     - _IridescenceMask: 1
     - _IridescenceThickness: 1
-    - _LightRayDefinition: 1.5
+    - _LightRayDefinition: 1.25
     - _LightRayFadeInDistance: 1
-    - _LightRayShadowMultiplier: 0.6
+    - _LightRayShadowMultiplier: 0.5
     - _LightRayTiling: 1
     - _LinkDetailsWithBase: 1
     - _MaterialID: 1
-    - _MaxSliceDepth: 100
+    - _MaxSliceDepth: 50
     - _Metallic: 0
     - _MetallicRemapMax: 1
     - _MetallicRemapMin: 0

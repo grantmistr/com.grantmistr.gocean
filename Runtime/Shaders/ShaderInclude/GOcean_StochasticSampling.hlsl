@@ -91,7 +91,7 @@ float4 StochasticSample(Texture2DArray t, SamplerState s, float2 uv, float slice
     return output;
 }
 
-float4 StochasticSampleLevel(Texture2D t, SamplerState s, float2 uv, float slice, float lod)
+float4 StochasticSampleLevel(Texture2D t, SamplerState s, float2 uv, float lod)
 {
     float w1, w2, w3;
     float2 v1, v2, v3;

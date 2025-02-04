@@ -297,6 +297,7 @@ float DecodeFloatRGB(float3 rgb)
     return dot(rgb, float3(0.0039215686274509803921568627451, 0.0000153787004998077662437524029, 0.0000000603086294110108480147153));
 }
 
+// texture coords for sampling depth texture
 float2 GetDepthTextureSamplingCoords(int2 coord, int LOD, float4 texelSize, StructuredBuffer<int2> depthPyramidMipLevelOffsets)
 {
     int2 mipOffset = depthPyramidMipLevelOffsets[LOD];
@@ -306,6 +307,24 @@ float2 GetDepthTextureSamplingCoords(int2 coord, int LOD, float4 texelSize, Stru
     normalizedCoord += (float2) mipOffset * texelSize.xy;
     
     return normalizedCoord;
+}
+
+float GetNearClipValue()
+{
+#if UNITY_REVERSED_Z
+    return 1.0;
+#else
+    return 0.0;
+#endif
+}
+
+bool IsFarPlane(float rawDepth)
+{
+#if UNITY_REVERSED_Z
+    return rawDepth == 0.0;
+#else
+    return rawDepth == 1.0;
+#endif
 }
 
 // Shadergraph
@@ -322,11 +341,7 @@ void ViewToRawDepth_float(float depth, float4 zBufferParams, out float rawDepth)
 
 void GetDepthTextureSamplingCoords_float(int2 coord, int LOD, float4 texelSize, StructuredBuffer<int2> depthPyramidMipLevelOffsets, out float2 normalizedCoord)
 {
-    int2 mipOffset = depthPyramidMipLevelOffsets[LOD];
-    
-    normalizedCoord = coord * texelSize.xy;
-    normalizedCoord /= (float) (1 << LOD);
-    normalizedCoord += (float2) mipOffset * texelSize.xy;
+    normalizedCoord = GetDepthTextureSamplingCoords(coord, LOD, texelSize, depthPyramidMipLevelOffsets);
 }
 
 #endif // GOCEAN_HELPERFUNCTIONS

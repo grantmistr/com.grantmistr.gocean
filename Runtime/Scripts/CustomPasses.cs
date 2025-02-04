@@ -17,13 +17,7 @@ namespace GOcean
     public class CustomPasses
     {
         public const int CUSTOM_PASS_VOLUME_COUNT = 3;
-        public static readonly string[] CUSTOM_PASS_VOLUME_NAMES =
-        {
-            "BeforeRendering",
-            "BeforePreRefraction",
-            "BeforePostProcess"
-        };
-        public static readonly CustomPassInjectionPoint[] CUSTOM_PASS_INJECTION_POINTS =
+        public static readonly CustomPassInjectionPoint[] CUSTOM_PASS_INJECTION_POINTS = new CustomPassInjectionPoint[CUSTOM_PASS_VOLUME_COUNT]
         {
             CustomPassInjectionPoint.BeforeRendering,
             CustomPassInjectionPoint.BeforePreRefraction,
@@ -31,9 +25,6 @@ namespace GOcean
         };
 
         private CustomPassVolume[] customPassVolumes = new CustomPassVolume[CUSTOM_PASS_VOLUME_COUNT];
-        public CustomPassVolume BeforeRendering => customPassVolumes[0];
-        public CustomPassVolume BeforePreRefraction => customPassVolumes[1];
-        public CustomPassVolume BeforePostProcess => customPassVolumes[2];
 
         public void Initialize(Ocean ocean, ComponentContainer components, Constants constants)
         {
@@ -207,7 +198,8 @@ namespace GOcean
         {
             components.Caustic.DrawOpaqueCaustic(ctx);
             components.Underwater.DrawOpaqueUnderwaterFog(ctx);
-            components.Screen.DrawLightRaysScreenWater(ctx);
+            //components.Screen.DrawLightRaysScreenWater(ctx);
+            components.Underwater.ComputeLightRaysScreenWater(ctx);
             components.Screen.BlurScreenTexture(ctx);
         }
     }

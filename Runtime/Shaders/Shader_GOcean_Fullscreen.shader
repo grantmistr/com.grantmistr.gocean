@@ -90,13 +90,7 @@ Shader "GOcean/Fullscreen"
 
         float depth = LoadCameraDepth(varyings.positionCS.xy); // opaque depth
     
-#if UNITY_REVERSED_Z
-        bool isNotFarPlane = (depth != 0.0);
-#else
-        bool isNotFarPlane = (depth != 1.0);
-#endif
-    
-        if (!isNotFarPlane)
+        if (IsFarPlane(depth))
         {
             discard;
         }
@@ -116,9 +110,8 @@ Shader "GOcean/Fullscreen"
         float waterDepth = _WaterDepthTexture[varyings.positionCS.xy].x; // water depth
         float linearEyeWaterDepth = LinearEyeDepth(waterDepth, _ZBufferParams);
         float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
-        float4 screenTextureSample = _TemporaryColorTexture[varyings.positionCS.xy];
-        bool underwaterMask = screenTextureSample.x; // x: underwater mask (above: 0, below: 1)
-        bool waterSurfaceMask = screenTextureSample.y;
+        uint oceanScreenTextureSample = _OceanScreenTexture[varyings.positionCS.xy];
+        bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
     
         float2 ndc = varyings.positionCS.xy / _ScreenSize.xy;
         float4 positionCS = float4(ndc * 2.0 - 1.0, depth, 1.0);
@@ -130,9 +123,9 @@ Shader "GOcean/Fullscreen"
         float3 positionAbsWS = positionWS.xyz + _WorldSpaceCameraPos;
 
 #if UNITY_REVERSED_Z
-        bool waterMask = waterDepth > depth;
+        bool waterMask = waterDepth >= depth;
 #else
-        bool waterMask = waterDepth < depth;
+        bool waterMask = waterDepth <= depth;
 #endif
     
         bool causticMaskBelow = waterMask != underwaterMask;
@@ -157,15 +150,31 @@ Shader "GOcean/Fullscreen"
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(varyings);
     
-        float4 screenTextureSample = _TemporaryColorTexture[varyings.positionCS.xy];
-        bool underwaterMask = screenTextureSample.x; // x: underwater mask (above: 0, below: 1)
-        bool waterSurfaceMask = screenTextureSample.y;
-
+        uint oceanScreenTextureSample = _OceanScreenTexture[varyings.positionCS.xy];
+        bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
+        bool waterSurfaceMask = GetCombinedWaterSurfaceMask(oceanScreenTextureSample);
+    
+        if (!(underwaterMask || waterSurfaceMask))
+        {
+            discard;
+        }
+    
         float depth = LoadCameraDepth(varyings.positionCS.xy); // opaque depth
         float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
         float waterDepth = _WaterDepthTexture[varyings.positionCS.xy];
         float linearEyeWaterDepth = LinearEyeDepth(waterDepth, _ZBufferParams);
 
+#if UNITY_REVERSED_Z
+        bool waterMask = waterDepth >= depth;
+#else
+        bool waterMask = waterDepth <= depth;
+#endif
+    
+        if (!((underwaterMask != waterSurfaceMask) || !waterMask))
+        {
+            discard;
+        }
+    
         float2 ndc = varyings.positionCS.xy / _ScreenSize.xy;
         float4 positionCS = float4(ndc * 2.0 - 1.0, depth, 1.0);
 
@@ -177,16 +186,12 @@ Shader "GOcean/Fullscreen"
         positionWS.xyz /= positionWS.w;
         float3 V = normalize(positionWS.xyz);
 
-#if UNITY_REVERSED_Z
-        bool isFarPlane = (depth == 0.0);
-#else
-        bool isFarPlane = (depth == 1.0);
-#endif
+        bool isFarPlane = IsFarPlane(depth);
 
-        float fogMask = linearEyeDepth - linearEyeWaterDepth * !(isFarPlane && waterSurfaceMask) * !underwaterMask;
+        float fogMask = linearEyeDepth - linearEyeWaterDepth * (!(isFarPlane && (underwaterMask != waterSurfaceMask)) && !underwaterMask);
         fogMask = GetUnderwaterDistanceFade(fogMask, _UnderwaterFogFadeDistance);
         fogMask *= underwaterMask ? 1.0 : fogMask * fogMask;
-        fogMask = 1.0 - fogMask;
+        fogMask = (1.0 - fogMask);// * ((underwaterMask != waterSurfaceMask) || !waterMask);
     
         float mipLevelDepth = min(linearEyeDepth, _UnderwaterFogFadeDistance);
         float mipLevel = (1.0 - _MipFogMaxMip * saturate((mipLevelDepth - _MipFogNear) / (_MipFogFar - _MipFogNear))) * (ENVCONSTANTS_CONVOLUTION_MIP_COUNT - 1);
@@ -214,7 +219,7 @@ Shader "GOcean/Fullscreen"
     const static uint slices = 8;
     const static float sliceStep = 1.0 / (float) slices;
 
-    float CalculateScreenWater(float2 positionCS, uint2 coord, float4 oceanScreenTextureSample)
+    float CalculateScreenWater(float2 positionCS, uint2 coord, bool underwaterMask, float prevFrameScreenWater)
     {
         float aspect = _ScreenSize.x / _ScreenSize.y;
         float2x2 m = GetRotationMatrixWithAspectRatio(_CameraZRotation, aspect);
@@ -235,24 +240,25 @@ Shader "GOcean/Fullscreen"
             c = clamp(c, int2(0, 0), dim);
             bool valid = dot((float2) coordOffset[i], flowDirection) < 0.0;
         
-            contribution += _TemporaryColorTexture[c].z * valid;
+            contribution += ExtractScreenWater(_OceanScreenTexture[c]) * valid;
         }
     
-        float screenWater = oceanScreenTextureSample.z;
+        float screenWater = prevFrameScreenWater;
         screenWater -= saturate(_ScreenWaterFadeSpeed * unity_DeltaTime.x);
         screenWater += saturate(contribution * flowMask * unity_DeltaTime.x);
-        screenWater = saturate(screenWater + oceanScreenTextureSample.x * 2.0);
+        screenWater = saturate(screenWater + underwaterMask * 2.0);
     
         return screenWater;
     }
 
-    float4 ComputeLightRaysScreenWater(Varyings varyings) : SV_Target
+    float2 ComputeLightRaysScreenWater(Varyings varyings) : SV_Target
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(varyings);
         uint2 coord = varyings.positionCS.xy;
     
-        float4 oceanScreenTextureSample = _TemporaryColorTexture[coord];
-        bool underwaterMask = (bool) oceanScreenTextureSample.x;
+        uint oceanScreenTextureSample = _OceanScreenTexture[coord];
+        bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
+        float prevFrameScreenWater = ExtractScreenWater(oceanScreenTextureSample);
         float waterDepth = _WaterDepthTexture[coord].x;
         float sceneDepth = LoadCameraDepth(coord).x;
         float viewDepth = RawToViewDepth(sceneDepth, _ZBufferParams);
@@ -353,23 +359,20 @@ Shader "GOcean/Fullscreen"
         sum = lerp(_LightRayStrengthInverse, sum, saturate(-dot(L.forward, float3(0.0, 1.0, 0.0))));
         sum = pow(saturate(sum), _LightRayDefinition);
     
-        float screenWater = CalculateScreenWater(cd.positionCS.xy, coord, oceanScreenTextureSample);
+        float screenWater = CalculateScreenWater(cd.positionCS.xy, coord, underwaterMask, prevFrameScreenWater);
     
-        // move underwater mask to bit 0 and water surface mask to bit 1 of screen texture R channel, then encode as a float
-        oceanScreenTextureSample.x = float((oceanScreenTextureSample.x > 0.0 ? 0x1 : 0x0) | (oceanScreenTextureSample.y > 0.0 ? 0x2 : 0x0)) / 255.0;
-        
-        return float4(oceanScreenTextureSample.x, sum, screenWater, 1.0);
+        return float2(sum, screenWater);
     }
 
-    float2 GetScreenWaterDisplacement(float2 coord, Texture2D t, float4 oceanScreenTextureSample)
+    float2 GetScreenWaterDisplacement(float2 coord, Texture2D<float2> t, float2 temporaryBlurTextureSample)
     {
         float offsetX = min(coord.x + 4.0, _ScreenSize.x - 1.0);
         float offsetY = min(coord.y + 4.0, _ScreenSize.y - 1.0);
     
-        float s0 = t[uint2(offsetX, coord.y)].w;
-        float s1 = t[uint2(coord.x, offsetY)].w;
+        float s0 = t[uint2(offsetX, coord.y)].y;
+        float s1 = t[uint2(coord.x, offsetY)].y;
 
-        return float2(oceanScreenTextureSample.w - s0, oceanScreenTextureSample.w - s1) * -400.0;
+        return float2(temporaryBlurTextureSample.y - s0, temporaryBlurTextureSample.y - s1) * -400.0;
     }
 
     float4 UnderwaterTint(Varyings varyings
@@ -392,17 +395,18 @@ Shader "GOcean/Fullscreen"
         float3 positionAbsWS = positionRWS.xyz + _WorldSpaceCameraPos;
         float3 viewDirection = normalize(positionRWS.xyz);
     
-        float4 oceanScreenTextureSample = _OceanScreenTexture[varyings.positionCS.xy]; // x: underwater mask (above: 0, below: 1), y: light rays, z: screen water, w: blurred screen water
+        float2 temporaryBlurTextureSample = _TemporaryBlurTexture[varyings.positionCS.xy];
+        uint oceanScreenTextureSample = _OceanScreenTexture[varyings.positionCS.xy];
         bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
     
-        float2 displacedSampleCoords = GetScreenWaterDisplacement(varyings.positionCS.xy, _OceanScreenTexture, oceanScreenTextureSample);
+        float2 displacedSampleCoords = GetScreenWaterDisplacement(varyings.positionCS.xy, _TemporaryBlurTexture, temporaryBlurTextureSample);
     
         float2 colorCoords = clamp(varyings.positionCS.xy + displacedSampleCoords, float2(0.0, 0.0), _ScreenSize.xy - 1.0);
         colorCoords = GetUnderwaterMask(_OceanScreenTexture[colorCoords]) ? varyings.positionCS.xy : colorCoords;
 
         float3 color = CustomPassLoadCameraColor(colorCoords, 0.0);
 
-        float lightRays = oceanScreenTextureSample.y;
+        float lightRays = temporaryBlurTextureSample.x;
         lightRays *= _LightRayStrength;
 
         color *= underwaterMask ? lightRays : 1.0;
@@ -411,20 +415,18 @@ Shader "GOcean/Fullscreen"
 #ifdef WATER_WRITES_TO_DEPTH
         float waterDepth = _WaterDepthTexture[varyings.positionCS.xy];
 #if UNITY_REVERSED_Z
-        float screenWaterAlpha = 1.0;
         float depth = max(opaqueDepth, waterDepth);
 #else
-        float screenWaterAlpha = 0.0;
         float depth = min(opaqueDepth, waterDepth);
 #endif
-        bool screenWaterAlphaMask = !underwaterMask && (oceanScreenTextureSample.w > 0.0);
-        outputDepth = screenWaterAlphaMask ? screenWaterAlpha : depth;
+        bool screenWaterAlphaMask = !underwaterMask && (temporaryBlurTextureSample.y > 0.0);
+        outputDepth = screenWaterAlphaMask ? UNITY_NEAR_CLIP_VALUE : depth;
 #endif // WATER_WRITES_TO_DEPTH
 
-        color *= 1.0 - oceanScreenTextureSample.w * !underwaterMask * 0.1;
+        color *= 1.0 - temporaryBlurTextureSample.y * !underwaterMask * 0.1;
     
         return float4(color, 1.0);
-}
+    }
 
     float4 TransferFinal(Varyings varyings
 #ifdef WATER_WRITES_TO_DEPTH

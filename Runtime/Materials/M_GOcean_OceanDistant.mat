@@ -29,16 +29,15 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _DISABLE_SSR_TRANSPARENT
-  - _DOUBLESIDED_ON
   - _ENABLE_FOG_ON_TRANSPARENT
-  - _MATERIAL_FEATURE_TRANSMISSION
-  - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords:
   - HAS_TERRAIN_ON
+  - _MATERIAL_FEATURE_TRANSMISSION
   - _NORMALMAP_TANGENT_SPACE
+  - _SURFACE_TYPE_TRANSPARENT
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 1
+  m_DoubleSidedGI: 0
   m_CustomRenderQueue: 2990
   stringTagMap:
     MotionVector: User
@@ -175,8 +174,8 @@ Material:
     - _ChunkSize: 90
     - _CoatMask: 0
     - _ConservativeDepthOffsetEnable: 0
-    - _CullMode: 0
-    - _CullModeForward: 0
+    - _CullMode: 2
+    - _CullModeForward: 2
     - _Cutoff: 0.5
     - _DepthOffsetEnable: 0
     - _DetailAlbedoScale: 1
@@ -189,7 +188,7 @@ Material:
     - _DisplacementMode: 0
     - _DistantFoam: 0.04000002
     - _DistantSmoothness: 0.7
-    - _DoubleSidedEnable: 1
+    - _DoubleSidedEnable: 0
     - _DoubleSidedGIMode: 0
     - _DoubleSidedNormalMode: 0
     - _DstBlend: 10
@@ -278,17 +277,17 @@ Material:
     - _TransparentDepthPrepassEnable: 0
     - _TransparentSortPriority: -10
     - _TransparentWritingMotionVec: 0
-    - _TransparentZWrite: 1
+    - _TransparentZWrite: 0
     - _UVBase: 0
     - _UVDetail: 0
     - _UVEmissive: 0
-    - _UnderwaterSurfaceEmissionStrength: 20
+    - _UnderwaterSurfaceEmissionStrength: 30
     - _UseEmissiveIntensity: 0
     - _UseShadowThreshold: 0
-    - _ZTestDepthEqualForOpaque: 4
+    - _ZTestDepthEqualForOpaque: 0
     - _ZTestGBuffer: 4
-    - _ZTestTransparent: 4
-    - _ZWrite: 1
+    - _ZTestTransparent: 0
+    - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}

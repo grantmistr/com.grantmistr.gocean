@@ -37,10 +37,10 @@ float Frag(float4 iVertex : SV_Position) : SV_Depth
     bool inSquare = IsInSquare(_CameraPositionStepped.xy, _ChunkGridResolution * _ChunkSize, uvWS);
     bool mask = oceanHeightMask ? !hemisphereMask : hemisphereMask;
     
-#if UNITY_REVERED_Z
-    bool isNotFarPlane = (posCS.z + 0.00000001) < 1.0;
+#if UNITY_REVERSED_Z
+    bool isNotFarPlane = (posCS.z + 0.00000001) > 0.0;
 #else
-    bool isNotFarPlane = (posCS.z - 0.00000001) > 0.0;
+    bool isNotFarPlane = (posCS.z - 0.00000001) < 1.0;
 #endif
     
     if (mask || (inSquare && isNotFarPlane))

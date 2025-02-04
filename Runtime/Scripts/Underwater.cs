@@ -166,9 +166,9 @@ namespace GOcean
             }
         }
 
-        public void ComputeLightRays(CustomPassContext ctx)
+        public void ComputeLightRaysScreenWater(CustomPassContext ctx)
         {
-            threadGroups.UpdateUnderwaterLightRays(RTHandles.rtHandleProperties.currentViewportSize, components.Underwater.threadGroupSizes);
+            threadGroups.UpdateUnderwaterLightRays(rtHandleSystem.rtHandleProperties.currentViewportSize, components.Underwater.threadGroupSizes);
             ctx.cmd.SetComputeTextureParam(ocean.UnderwaterCS, kernelIDs.LightRays, PropIDs.cameraDepthTexture, ctx.cameraDepthBuffer);
             ctx.cmd.DispatchCompute(ocean.UnderwaterCS, kernelIDs.LightRays, threadGroups.LightRays);
         }

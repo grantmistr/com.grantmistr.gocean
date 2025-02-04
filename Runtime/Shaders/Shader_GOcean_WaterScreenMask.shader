@@ -22,69 +22,28 @@
             {
             }
 
-            ZWrite Off
+            Stencil
+            {
+                Ref 0
+                WriteMask 255
+                Comp Always
+                Pass Replace
+            }
+
+            ZWrite On
             ZTest Off
             Cull Back
             Blend Off
-            ColorMask RG
 
             HLSLPROGRAM
 
             #pragma target 4.5
             #pragma vertex vert
             #pragma fragment frag
+
+            #pragma multi_compile _ UNITY_REVERSED_Z
 
             #include "ShaderInclude/GOcean_WaterScreenMask_Pass_Clear.hlsl"
-
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "ClearTransferScreenWater"
-
-            Tags
-            {
-            }
-
-            ZWrite Off
-            ZTest Off
-            Cull Back
-            Blend Off
-            ColorMask RGB
-
-            HLSLPROGRAM
-
-            #pragma target 4.5
-            #pragma vertex vert
-            #pragma fragment frag
-
-            #include "ShaderInclude/GOcean_WaterScreenMask_Pass_ClearTransferScreenWater.hlsl"
-
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "ClearTransferScreenWaterWriteStencil"
-
-            Tags
-            {
-            }
-
-            ZWrite Off
-            ZTest Off
-            Cull Back
-            Blend Off
-            ColorMask RGB
-
-            HLSLPROGRAM
-
-            #pragma target 4.5
-            #pragma vertex vert
-            #pragma fragment frag
-
-            #include "ShaderInclude/GOcean_WaterScreenMask_Pass_ClearTransferScreenWater.hlsl"
 
             ENDHLSL
         }
@@ -99,9 +58,8 @@
 
             Stencil
             {
-                Ref 1
-                ReadMask 1
-                WriteMask 1
+                Ref 3
+                WriteMask 3
                 Comp Always
                 Pass Replace
             }
@@ -110,7 +68,6 @@
             ZTest LEqual
             Cull Off
             Blend Off
-            ColorMask RG
 
             HLSLPROGRAM
             
@@ -144,7 +101,7 @@
             ZTest Less
             Cull Back
             Blend Off
-            ColorMask R
+            ColorMask B
 
             HLSLPROGRAM
             
@@ -159,7 +116,7 @@
 
         Pass
         {
-            Name "RemoveHoles"
+            Name "ClearMasks"
 
             Tags
             {
@@ -168,8 +125,8 @@
             ZWrite Off
             ZTest Off
             Cull Back
-            Blend Off
-            ColorMask RGB
+            BlendOp LogicalAnd
+            ColorMask R
 
             HLSLPROGRAM
 
@@ -177,7 +134,36 @@
             #pragma vertex vert
             #pragma fragment frag
 
-            #include "ShaderInclude/GOcean_WaterScreenMask_Pass_RemoveHoles.hlsl"
+            #pragma multi_compile _ UNITY_REVERSED_Z
+
+            #include "ShaderInclude/GOcean_WaterScreenMask_Pass_ClearMasks.hlsl"
+
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "EncodeMasks"
+
+            Tags
+            {
+            }
+
+            ZWrite Off
+            ZTest Off
+            Cull Back
+            BlendOp LogicalOr
+            ColorMask R
+
+            HLSLPROGRAM
+
+            #pragma target 4.5
+            #pragma vertex vert
+            #pragma fragment frag
+
+            #pragma multi_compile _ UNITY_REVERSED_Z
+
+            #include "ShaderInclude/GOcean_WaterScreenMask_Pass_EncodeMasks.hlsl"
 
             ENDHLSL
         }
@@ -194,7 +180,7 @@
             ZTest Off
             Cull Back
             Blend Off
-            ColorMask GA            
+            ColorMask BA            
 
             HLSLPROGRAM
 
@@ -202,7 +188,7 @@
             #pragma vertex vert
             #pragma fragment frag
 
-            #pragma multi_compile_fragment _ UNITY_REVERSED_Z
+            #pragma multi_compile _ UNITY_REVERSED_Z
 
             #include "ShaderInclude/GOcean_WaterScreenMask_Pass_HorizontalBlur.hlsl"
 
@@ -221,7 +207,7 @@
             ZTest Off
             Cull Back
             Blend Off
-            ColorMask GA
+            ColorMask RG
 
             HLSLPROGRAM
 
@@ -229,7 +215,7 @@
             #pragma vertex vert
             #pragma fragment frag
 
-            #pragma multi_compile_fragment _ UNITY_REVERSED_Z
+            #pragma multi_compile _ UNITY_REVERSED_Z
 
             #include "ShaderInclude/GOcean_WaterScreenMask_Pass_VerticalBlur.hlsl"
 
@@ -247,7 +233,6 @@
             Stencil
             {
                 Ref 2
-                ReadMask 2
                 WriteMask 2
                 Comp Always
                 Pass Replace
@@ -257,7 +242,7 @@
             ZTest LEqual
             Cull Off
             Blend Off
-            ColorMask G
+            ColorMask RGA
 
             HLSLPROGRAM
             
@@ -280,9 +265,8 @@
 
             Stencil
             {
-                Ref 2
-                ReadMask 2
-                WriteMask 2
+                Ref 4
+                WriteMask 4
                 Comp Always
                 Pass Replace
             }
@@ -291,7 +275,7 @@
             ZTest Off
             Cull Back
             Blend Off
-            ColorMask G
+            ColorMask A
 
             HLSLPROGRAM
             
@@ -299,8 +283,8 @@
             #pragma vertex vert
             #pragma fragment frag
 
+            #pragma multi_compile _ UNITY_REVERSED_Z
             #pragma multi_compile_fragment _ UNITY_UV_STARTS_AT_TOP
-            #pragma multi_compile_fragment _ UNITY_REVERSED_Z
 
             #include "ShaderInclude/GOcean_WaterScreenMask_Pass_DepthOnlyDistantOcean.hlsl"
 

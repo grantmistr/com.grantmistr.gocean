@@ -12,7 +12,7 @@ v2f vert(uint vertexID : SV_VertexID)
     float2 bary;
     GetUnderwaterMaskVertexPositionWithBaryFromTri(vertexID, position, bary);
     
-    position -= _WorldSpaceCameraPos_Internal.xyz;
+    //position -= _WorldSpaceCameraPos_Internal.xyz;
     
     o.barycentricCoord = bary;
     o.vertex = mul(_ViewProjMatrix, float4(position, 1.0));
