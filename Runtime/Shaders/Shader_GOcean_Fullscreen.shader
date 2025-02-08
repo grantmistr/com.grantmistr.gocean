@@ -2,7 +2,6 @@ Shader "GOcean/Fullscreen"
 {
     Properties
     {
-        [NoScaleOffset]_ScreenWaterNoiseTexture("_ScreenWaterNoiseTexture", 2D) = "black" {}
         _PatchHighestWaveCount("_PatchHighestWaveCount", Vector) = (1.0, 1.0, 1.0, 1.0)
         _PatchLowestWaveCount("_PatchLowestWaveCount", Vector) = (1.0, 1.0, 1.0, 1.0)
         _WaterColor("_WaterColor", Color) = (1.0, 1.0, 1.0, 1.0)
@@ -72,8 +71,6 @@ Shader "GOcean/Fullscreen"
     #include "ShaderInclude/GOcean_HelperFunctions.hlsl"
     #include "ShaderInclude/GOcean_UnderwaterSampling.hlsl"
     #include "ShaderInclude/GOcean_ShadowSampling.hlsl"
-
-    Texture2D _ScreenWaterNoiseTexture;
 
     float4  _PatchHighestWaveCount, _PatchLowestWaveCount, _WaterColor;
     float   _MaxSliceDepth, _MinSliceDepth, _LightRayFadeInDistance, _LightRayTiling, _LightRayDefinition, _LightRayShadowMultiplier,
@@ -203,167 +200,6 @@ Shader "GOcean/Fullscreen"
         return float4(fogColor, fogMask);
     }
 
-    struct CoordinateData
-    {
-        float2 positionNDC;
-        float4 positionCS;
-        float4 positionRWS;
-        float3 positionWS;
-        float3 positionWSRot;
-    
-        float viewDepth;
-        float rawDepth;
-    };
-
-    const static int2 coordOffset[8] = { int2(-1, -1), int2(0, -1), int2(1, -1), int2(-1, 0), int2(1, 0), int2(-1, 1), int2(0, 1), int2(1, 1) };
-    const static uint slices = 8;
-    const static float sliceStep = 1.0 / (float) slices;
-
-    float CalculateScreenWater(float2 positionCS, uint2 coord, bool underwaterMask, float prevFrameScreenWater)
-    {
-        float aspect = _ScreenSize.x / _ScreenSize.y;
-        float2x2 m = GetRotationMatrixWithAspectRatio(_CameraZRotation, aspect);
-        float2 uvScreen = positionCS;
-        uvScreen = mul(m, uvScreen);
-        uvScreen *= _ScreenWaterTiling;
-        uvScreen.x *= aspect;
-    
-        float flowMask = _ScreenWaterNoiseTexture.SampleLevel(s_linear_repeat_sampler, uvScreen, 0.0).x;
-        float2 flowDirection = mul(m, float2(0.0, -1.0));
-    
-        int2 dim = (int2) _ScreenSize.xy - 1;
-        float contribution = 0.0;
-        [unroll(8)]
-        for (int i = 0; i < 8; i++)
-        {
-            int2 c = (int2) coord + coordOffset[i];
-            c = clamp(c, int2(0, 0), dim);
-            bool valid = dot((float2) coordOffset[i], flowDirection) < 0.0;
-        
-            //contribution += ExtractScreenWater(_OceanScreenTexture[c]) * valid;
-        }
-    
-        float screenWater = prevFrameScreenWater;
-        screenWater -= saturate(_ScreenWaterFadeSpeed * unity_DeltaTime.x);
-        screenWater += saturate(contribution * flowMask * unity_DeltaTime.x);
-        screenWater = saturate(screenWater + underwaterMask * 2.0);
-    
-        return screenWater;
-    }
-
-    float2 ComputeLightRaysScreenWater(Varyings varyings) : SV_Target
-    {
-        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(varyings);
-        uint2 coord = varyings.positionCS.xy;
-    
-        uint oceanScreenTextureSample = _OceanScreenTexture[coord];
-        bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
-        float prevFrameScreenWater = ExtractCachedTime(oceanScreenTextureSample);
-        float waterDepth = _WaterDepthTexture[coord].x;
-        float sceneDepth = LoadCameraDepth(coord).x;
-        float viewDepth = RawToViewDepth(sceneDepth, _ZBufferParams);
-        float waterViewDepth = RawToViewDepth(waterDepth, _ZBufferParams);
-    
-        float causticSourceSpectrumSlice = 9.0;
-        float causticSampleOffsetDelta = 2.0 / (float) _SpectrumTextureResolution;
-    
-        DirectionalLightData L = _DirectionalLightDatas[0];
-        float3x3 lightRotationMatrix =
-        {
-            L.right,
-            L.up,
-            L.forward
-        };
-    
-        // Try and get distant color (where view depth would be > camera far plane) to match close light ray color.
-        float distantLightRayValue = 0.3 + 0.7 / ((_LightRayDefinition + _Turbulence) / _PatchHighestWaveCount[0] + 1.0);
-    
-        float heightDelta = GetLightRayHeightFade(_WorldSpaceCameraPos_Internal.xyz, _WaterHeight, _CausticFadeDepth);
-    
-        float startDepth = underwaterMask ? max(_MinSliceDepth, _ProjectionParams.y) : waterViewDepth;
-    
-        CoordinateData cd;
-        cd.viewDepth = startDepth;
-        cd.rawDepth = ViewToRawDepth(cd.viewDepth, _ZBufferParams);
-        cd.positionNDC = (float2) coord / _ScreenSize.xy;
-        cd.positionCS = float4(cd.positionNDC * 2.0 - 1.0, cd.rawDepth, 1.0);
-#ifdef UNITY_UV_STARTS_AT_TOP
-        cd.positionCS.y = -cd.positionCS.y;
-#endif
-        cd.positionRWS = mul(_InvViewProjMatrix, cd.positionCS);
-        cd.positionRWS /= cd.positionRWS.w;
-    
-        float startDistance = length(cd.positionRWS.xyz);
-    
-        // for some reason _CascadeShadowCount is one less than count shown in inspector, so equal to number of cascade splits
-        uint shadowIndex;
-        [loop]
-        for (shadowIndex = 0; shadowIndex <= _CascadeShadowCount; shadowIndex++)
-        {
-            if (startDistance < _CascadeShadowSplits[shadowIndex])
-            {
-                break;
-            }
-        }
-    
-        float sum = 0.0;
-        for (uint i = 0; i < slices; i++)
-        {
-            float slice = (float) i;
-            float normalizedSlice = slice / (float) slices;
-        
-            cd.viewDepth = Random(cd.positionNDC + slice);
-            cd.viewDepth *= sliceStep;
-            cd.viewDepth += normalizedSlice;
-            cd.viewDepth *= cd.viewDepth;
-            cd.viewDepth *= _MaxSliceDepth;
-        
-            cd.rawDepth = ViewToRawDepth(cd.viewDepth, _ZBufferParams);
-            cd.rawDepth = saturate(cd.rawDepth);
-        
-            cd.positionCS.z = cd.rawDepth;
-            cd.positionRWS = mul(_InvViewProjMatrix, cd.positionCS);
-            cd.positionRWS /= cd.positionRWS.w;
-            cd.positionWS = cd.positionRWS.xyz + _WorldSpaceCameraPos_Internal.xyz;
-            cd.positionWSRot = mul(lightRotationMatrix, cd.positionWS).xyz;
-        
-            float2 causticUV = cd.positionWSRot.xy * _LightRayTiling / _PatchSize[0];
-        
-            float3 c  = _SpectrumTexture.SampleLevel(s_linear_repeat_sampler, float3(causticUV, causticSourceSpectrumSlice), 0.0).xyz;
-            float3 cR = _SpectrumTexture.SampleLevel(s_linear_repeat_sampler, float3(causticUV.x + causticSampleOffsetDelta, causticUV.y, causticSourceSpectrumSlice), 0.0).xyz;
-            float3 cU = _SpectrumTexture.SampleLevel(s_linear_repeat_sampler, float3(causticUV.x, causticUV.y + causticSampleOffsetDelta, causticSourceSpectrumSlice), 0.0).xyz;
-    
-            float caustic = abs(c.x - cR.x) + abs(c.y - cR.y) + abs(c.x - cU.x) + abs(c.y - cU.y);
-            caustic = 1.0 / (caustic + 1.0);
-        
-            bool waterDepthTest = cd.viewDepth < waterViewDepth; // in front of water surface
-            waterDepthTest = underwaterMask ? waterDepthTest : !waterDepthTest; // flip if out of water
-            bool depthTest = waterDepthTest && (cd.viewDepth < viewDepth); // true if in water and not occluded by objects
-        
-            float fadeIn = GetLightRayFadeIn(startDepth, cd.viewDepth, _LightRayFadeInDistance);
-        
-            float distance = length(cd.positionRWS.xyz);
-            shadowIndex = (distance > _CascadeShadowSplits[shadowIndex]) && (shadowIndex < _CascadeShadowCount) ? shadowIndex + 1 : shadowIndex;
-            float3 shadowSamplingCoords = GetDirectionalShadowSamplingCoords(_HDShadowDatas[shadowIndex], _CascadeShadowAtlasSize, cd.positionRWS.xyz);
-            float shadowSample = _ShadowmapCascadeAtlas.SampleLevel(s_point_clamp_sampler, shadowSamplingCoords.xy, 0.0).x;
-            float shadowTest = (distance > _CascadeShadowSplits[shadowIndex]) || shadowSamplingCoords.z > shadowSample ? 1.0 : 0.0;
-        
-            caustic = lerp(_LightRayShadowMultiplier, caustic, shadowTest);
-            caustic = lerp(1.0, caustic, min(min(fadeIn, heightDelta), depthTest));
-            caustic = lerp(caustic, distantLightRayValue, saturate(cd.viewDepth / _ProjectionParams.z));
-        
-            sum += caustic;
-        }
-    
-        sum /= (float) slices;
-        sum = lerp(_LightRayStrengthInverse, sum, saturate(-dot(L.forward, float3(0.0, 1.0, 0.0))));
-        sum = pow(saturate(sum), _LightRayDefinition);
-    
-        float screenWater = CalculateScreenWater(cd.positionCS.xy, coord, underwaterMask, prevFrameScreenWater);
-    
-        return float2(sum, screenWater);
-    }
-
     float2 GetScreenWaterDisplacement(float2 coord, Texture2D<float2> t, float2 temporaryBlurTextureSample)
     {
         float offsetX = min(coord.x + 4.0, _ScreenSize.x - 1.0);
@@ -372,7 +208,7 @@ Shader "GOcean/Fullscreen"
         float s0 = t[uint2(offsetX, coord.y)].y;
         float s1 = t[uint2(coord.x, offsetY)].y;
 
-        return float2(temporaryBlurTextureSample.y - s0, temporaryBlurTextureSample.y - s1) * -400.0;
+        return float2(temporaryBlurTextureSample.y - s0, temporaryBlurTextureSample.y - s1) * -600.0;
     }
 
     float4 UnderwaterTint(Varyings varyings
@@ -383,18 +219,6 @@ Shader "GOcean/Fullscreen"
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(varyings);
         
-        float opaqueDepth = LoadCameraDepth(varyings.positionCS.xy);
-    
-        float2 positionNDC = varyings.positionCS.xy / _ScreenSize.xy;
-        float4 positionCS = float4(positionNDC * 2.0 - 1.0, opaqueDepth, 1.0);
-#if UNITY_UV_STARTS_AT_TOP
-        positionCS.y = -positionCS.y;
-#endif
-        float4 positionRWS = mul(_InvViewProjMatrix, positionCS);
-        positionRWS.xyz /= positionRWS.w;
-        float3 positionAbsWS = positionRWS.xyz + _WorldSpaceCameraPos;
-        float3 viewDirection = normalize(positionRWS.xyz);
-    
         float2 temporaryBlurTextureSample = _TemporaryBlurTexture[varyings.positionCS.xy];
         uint oceanScreenTextureSample = _OceanScreenTexture[varyings.positionCS.xy];
         bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
@@ -413,14 +237,14 @@ Shader "GOcean/Fullscreen"
         color *= underwaterMask ? _UnderwaterFogColor.xyz : 1.0;
     
 #ifdef WATER_WRITES_TO_DEPTH
-        float waterDepth = _WaterDepthTexture[varyings.positionCS.xy];
-#if UNITY_REVERSED_Z
-        float depth = max(opaqueDepth, waterDepth);
-#else
-        float depth = min(opaqueDepth, waterDepth);
-#endif
+        float depth = LoadCameraDepth(varyings.positionCS.xy);
         bool screenWaterAlphaMask = !underwaterMask && (temporaryBlurTextureSample.y > 0.0);
-        outputDepth = screenWaterAlphaMask ? UNITY_NEAR_CLIP_VALUE : depth;
+        float screenWaterDepth = screenWaterAlphaMask ? UNITY_NEAR_CLIP_VALUE : 1.0 - UNITY_NEAR_CLIP_VALUE;
+#if UNITY_REVERSED_Z
+        outputDepth = max(screenWaterDepth, depth);
+#else
+        outputDepth = min(screenWaterDepth, depth);
+#endif
 #endif // WATER_WRITES_TO_DEPTH
 
         color *= 1.0 - temporaryBlurTextureSample.y * !underwaterMask * 0.1;
@@ -439,7 +263,7 @@ Shader "GOcean/Fullscreen"
         float4 color = _TemporaryColorTexture[varyings.positionCS.xy];
     
 #ifdef WATER_WRITES_TO_DEPTH
-        depth = _TemporaryDepthTexture[varyings.positionCS.xy].x;
+        depth = _WaterDepthTexture[varyings.positionCS.xy].x;
 #endif    
     
         return color;
@@ -484,24 +308,10 @@ Shader "GOcean/Fullscreen"
 
         Pass
         {
-            Name "ComputeLightRaysScreenWater"
-
-            ZWrite Off
-            ZTest Off
-            Cull Back
-            Blend Off
-
-            HLSLPROGRAM
-                #pragma fragment ComputeLightRaysScreenWater
-            ENDHLSL
-        }
-
-        Pass
-        {
             Name "UnderwaterTintWriteDepth"
 
             ZWrite On
-            ZTest Off
+            ZTest LEqual
             Cull Back
             Blend Off
 

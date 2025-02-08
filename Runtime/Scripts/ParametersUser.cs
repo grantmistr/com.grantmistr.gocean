@@ -249,9 +249,8 @@ namespace GOcean
         public Texture2D screenWaterNoiseTexture;
         [Min(0f)]
         public float screenWaterTiling = 0.2f;
-        [Tooltip("Behavior of fading water can be quite different in editor versus play mode.")]
-        [Min(0f)]
-        public float screenWaterFadeSpeed = 1.3f;
+        [Min(1f)]
+        public float screenWaterFadeSpeed = 1f;
 
         public override void Update(ComponentContainer components)
         {
@@ -266,7 +265,7 @@ namespace GOcean
         [Min(0f)]
         public float causticStrength = 0.08f;
         public float causticTiling = 0.8f;
-        [Tooltip("Strength of chromatic aberration type effect.")]
+        [Tooltip("Strength of chromatic aberration like effect.")]
         public float causticDistortion = 0.002f;
         [Min(0f)]
         public float causticDefinition = 10f;

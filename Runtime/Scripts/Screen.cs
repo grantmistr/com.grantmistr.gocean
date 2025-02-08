@@ -20,9 +20,8 @@ namespace GOcean
         [ShaderParamGlobal("_OceanScreenTexture")]
         public RTHandle screenTexture;
 
-        private int shaderPassClear, shaderPassClearTransferScreenWater, shaderPassClearTransferScreenWaterWriteStencil, shaderPassScreenMask, shaderPassScreenMaskUnderwaterPyramid,
-            shaderPassRemoveHoles, shaderPassHorizontalBlur, shaderPassVerticalBlur, shaderPassDepthOnlyOcean, shaderPassDepthOnlyDistantOcean, shaderPassComputeLightRaysScreenWater,
-            shaderPassEncodeMasks, shaderPassClearMasks;
+        private int shaderPassClear, shaderPassScreenMask, shaderPassScreenMaskUnderwaterPyramid, shaderPassHorizontalBlur, shaderPassVerticalBlur,
+            shaderPassDepthOnlyOcean, shaderPassDepthOnlyDistantOcean, shaderPassEncodeMasks, shaderPassClearMasks;
 
         public Screen()
         {
@@ -79,18 +78,14 @@ namespace GOcean
         private void GetShaderPasses()
         {
             shaderPassClear = ocean.WaterScreenMaskM.FindPass("Clear");
-            shaderPassClearTransferScreenWater = ocean.WaterScreenMaskM.FindPass("ClearTransferScreenWater");
-            shaderPassClearTransferScreenWaterWriteStencil = ocean.WaterScreenMaskM.FindPass("ClearTransferScreenWaterWriteStencil");
             shaderPassScreenMask = ocean.WaterScreenMaskM.FindPass("ScreenMask");
             shaderPassScreenMaskUnderwaterPyramid = ocean.WaterScreenMaskM.FindPass("UnderwaterPyramid");
-            shaderPassRemoveHoles = ocean.WaterScreenMaskM.FindPass("RemoveHoles");
             shaderPassEncodeMasks = ocean.WaterScreenMaskM.FindPass("EncodeMasks");
             shaderPassClearMasks = ocean.WaterScreenMaskM.FindPass("ClearMasks");
             shaderPassHorizontalBlur = ocean.WaterScreenMaskM.FindPass("HorizontalBlur");
             shaderPassVerticalBlur = ocean.WaterScreenMaskM.FindPass("VerticalBlur");
             shaderPassDepthOnlyOcean = ocean.WaterScreenMaskM.FindPass("DepthOnlyOcean");
             shaderPassDepthOnlyDistantOcean = ocean.WaterScreenMaskM.FindPass("DepthOnlyDistantOcean");
-            shaderPassComputeLightRaysScreenWater = ocean.FullscreenM.FindPass("ComputeLightRaysScreenWater");
         }
 
         /// <summary>
@@ -161,12 +156,6 @@ namespace GOcean
             CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, null, shaderPassEncodeMasks);
         }
 
-        public void DrawLightRaysScreenWater(CustomPassContext ctx)
-        {
-            CoreUtils.SetRenderTarget(ctx.cmd, screenTexture, ClearFlag.None);
-            CoreUtils.DrawFullScreen(ctx.cmd, ocean.FullscreenM, ctx.propertyBlock, shaderPassComputeLightRaysScreenWater);
-        }
-
         public void BlurScreenTexture(CustomPassContext ctx)
         {
             // horizontal blur; writes RG to temp color tex
@@ -180,7 +169,7 @@ namespace GOcean
 
         private float CalculateScreenWaterFadeSpeed(float screenWaterFadeSpeed)
         {
-            return screenWaterFadeSpeed * 2f;
+            return screenWaterFadeSpeed * 600f;
         }
     }
 }

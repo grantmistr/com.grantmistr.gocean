@@ -154,9 +154,9 @@ namespace GOcean
             if (components.Generic.waterWritesToDepth)
             {
                 ctx.propertyBlock.SetTexture(PropIDs.waterDepthTexture, components.Generic.waterDepthTexture);
-                ctx.propertyBlock.SetTexture(PropIDs.temporaryDepthTexture, components.Generic.temporaryDepthTexture);
+                //ctx.propertyBlock.SetTexture(PropIDs.temporaryDepthTexture, components.Generic.temporaryDepthTexture);
 
-                CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryColorTexture, components.Generic.temporaryDepthTexture, ClearFlag.None);
+                CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.Depth);
                 CoreUtils.DrawFullScreen(ctx.cmd, ocean.FullscreenM, ctx.propertyBlock, shaderPassUnderwaterTintWriteDepth);
             }
             else

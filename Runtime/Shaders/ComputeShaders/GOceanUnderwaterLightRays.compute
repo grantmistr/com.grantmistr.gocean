@@ -42,14 +42,14 @@ float4  _PatchHighestWaveCount, _PatchLowestWaveCount;
 float   _MaxSliceDepth, _MinSliceDepth, _LightRayFadeInDistance, _LightRayTiling, _LightRayDefinition, _LightRayShadowMultiplier,
         _ScreenWaterFadeSpeed, _ScreenWaterTiling;
 
-const static int2 coordOffset[8] = { int2(-1, -1), int2(0, -1), int2(1, -1), int2(-1, 0), int2(1, 0), int2(-1, 1), int2(0, 1), int2(1, 1) };
 const static uint slices = 8;
 const static float sliceStep = 1.0 / (float) slices;
+const static float causticSourceSpectrumSlice = 9.0;
 
 void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inout uint cachedTime, out float screenWater)
 {
-    uint currFrameTime = ((uint) (_Time.x * _ScreenWaterFadeSpeed)) % 63u; // looped value 0 - 62
-    uint nextFrameTime = ((uint) (_Time.x * _ScreenWaterFadeSpeed + unity_DeltaTime.x * _ScreenWaterFadeSpeed)) % 63u;
+    uint currFrameTime = ((uint) (_Time.x * _ScreenWaterFadeSpeed)) % CACHED_TIME_MAX; // looped value 0 - 62
+    uint nextFrameTime = ((uint) (_Time.x * _ScreenWaterFadeSpeed + unity_DeltaTime.x * _ScreenWaterFadeSpeed)) % CACHED_TIME_MAX;
     
     if (underwaterMask)
     {
@@ -58,26 +58,26 @@ void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inou
         return;
     }
     
-    if (cachedTime == 63u)
+    if (cachedTime == CACHED_TIME_MAX)
     {
         screenWater = 0.0;
         return;
     }
     
     int currFrameTimeRemap = int(currFrameTime) - int(cachedTime);
-    currFrameTimeRemap = currFrameTimeRemap < 0 ? 63 + currFrameTimeRemap : currFrameTimeRemap;
+    currFrameTimeRemap = currFrameTimeRemap < 0 ? CACHED_TIME_MAX + currFrameTimeRemap : currFrameTimeRemap;
     
     int nextFrameTimeRemap = int(nextFrameTime) - int(cachedTime);
-    nextFrameTimeRemap = nextFrameTimeRemap < 0 ? 63 + nextFrameTimeRemap : nextFrameTimeRemap;
+    nextFrameTimeRemap = nextFrameTimeRemap < 0 ? CACHED_TIME_MAX + nextFrameTimeRemap : nextFrameTimeRemap;
     
     if (nextFrameTimeRemap < currFrameTimeRemap)
     {
-        cachedTime = 63u;
+        cachedTime = CACHED_TIME_MAX;
         screenWater = 0.0;
         return;
     }
     
-    float currFrameTime01 = (float) currFrameTimeRemap / 62.0;
+    float currFrameTime01 = (float) currFrameTimeRemap / (CACHED_TIME_MAX - 1.0);
     
     float aspect = _ScreenSize.x / _ScreenSize.y;
     float2x2 m = GetRotationMatrixWithAspectRatio(_CameraZRotation, aspect);
@@ -87,6 +87,7 @@ void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inou
     uvScreen.x *= aspect;
     
     float flowMask = _ScreenWaterNoiseTexture.SampleLevel(sampler_Linear_Repeat, uvScreen, 0.0).x;
+    flowMask *= flowMask;
     
     screenWater = saturate(flowMask - currFrameTime01);
     
@@ -111,7 +112,6 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
     float viewDepth = RawToViewDepth(sceneDepth, _ZBufferParams);
     float waterViewDepth = RawToViewDepth(waterDepth, _ZBufferParams);
     
-    float causticSourceSpectrumSlice = 9.0;
     float causticSampleOffsetDelta = 2.0 / (float) _SpectrumTextureResolution;
     
     DirectionalLightData L = _DirectionalLightDatas[0];

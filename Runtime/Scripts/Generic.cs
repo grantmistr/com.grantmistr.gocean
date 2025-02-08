@@ -35,8 +35,6 @@ namespace GOcean
         public RTHandle waterDepthTexture;
         [ShaderParamGlobal("_TemporaryColorTexture")]
         public RTHandle temporaryColorTexture;
-        [ShaderParamGlobal("_TemporaryDepthTexture")]
-        public RTHandle temporaryDepthTexture;
         [ShaderParamGlobal("_TemporaryBlurTexture")]
         public RTHandle temporaryBlurTexture;
 
@@ -63,7 +61,6 @@ namespace GOcean
             ReleaseTexture(ref randomNoiseTexture);
             ReleaseTexture(ref waterDepthTexture);
             ReleaseTexture(ref temporaryColorTexture);
-            ReleaseTexture(ref temporaryDepthTexture);
             ReleaseTexture(ref temporaryBlurTexture);
         }
 
@@ -211,20 +208,6 @@ namespace GOcean
                     TextureWrapMode.Clamp,
                     TextureDimension.Tex2D,
                     name: "WaterDepthTexture"
-                );
-            }
-
-            if (temporaryDepthTexture == null)
-            {
-                temporaryDepthTexture = rtHandleSystem.Alloc(
-                    Vector2.one,
-                    1,
-                    DepthBits.Depth32,
-                    GraphicsFormat.None,
-                    FilterMode.Point,
-                    TextureWrapMode.Clamp,
-                    TextureDimension.Tex2D,
-                    name: "TemporaryDepthTexture"
                 );
             }
 

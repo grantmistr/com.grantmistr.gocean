@@ -4,6 +4,7 @@
 #define UNDERWATER_MASK_BIT 0x1
 #define WATER_SURFACE_MASK_BIT 0x2
 #define CACHED_TIME_BIT_MASK 0xFC
+#define CACHED_TIME_MAX 63
 
 #include "GOcean_HelperFunctions.hlsl"
 
