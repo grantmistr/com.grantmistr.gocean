@@ -103,7 +103,7 @@ Shader "GOcean/OceanDistant"
             Cull Back
             Blend Off
             ZTest LEqual
-            ZWrite Off
+            ZWrite On
 
             Stencil
             {
