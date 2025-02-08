@@ -321,9 +321,19 @@ float GetNearClipValue()
 bool IsFarPlane(float rawDepth)
 {
 #if UNITY_REVERSED_Z
-    return rawDepth == 0.0;
+    return rawDepth <= 0.0;
 #else
-    return rawDepth == 1.0;
+    return rawDepth >= 1.0;
+#endif
+}
+
+// biases the far plane closer when bias is positive
+bool IsFarPlane(float rawDepth, float bias)
+{
+#if UNITY_REVERSED_Z
+    return (rawDepth - bias) <= 0.0;
+#else
+    return (rawDepth + bias) >= 1.0;
 #endif
 }
 

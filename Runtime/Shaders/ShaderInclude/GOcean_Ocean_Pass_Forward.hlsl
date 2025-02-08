@@ -7,19 +7,44 @@
 #include "GOcean_Constants.hlsl"
 #include "GOcean_GetTrisFromBuffer.hlsl"
 
+struct v2f
+{
+    float4 position : SV_Position;
+    float3 positionRWS : TEXCOORD0;
+    float2 preDisplacedPositionXZ : TEXCOORD1;
+};
+
 #ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/MotionVectorVertexShaderCommon.hlsl"
 
-float4 Vert(uint vertexID : SV_VertexID) : SV_Position
+v2f Vert(uint vertexID : SV_VertexID)
 {
-    return GetFullScreenTriangleVertexPosition(vertexID, UNITY_NEAR_CLIP_VALUE);
+    float3 displacedPosition;
+    float2 preDisplacedPositionXZ;
+    GetVertexFromTri(vertexID, preDisplacedPositionXZ, displacedPosition);
+    
+    v2f o;
+    o.position = mul(_ViewProjMatrix, float4(displacedPosition, 1.0));
+    o.positionRWS = displacedPosition;
+    o.preDisplacedPositionXZ = preDisplacedPositionXZ;
+    
+    return o;
 }
 
 #else // _WRITE_TRANSPARENT_MOTION_VECTOR
 
-float4 Vert(uint vertexID : SV_VertexID) : SV_Position
+v2f Vert(uint vertexID : SV_VertexID)
 {
-    return GetFullScreenTriangleVertexPosition(vertexID, UNITY_NEAR_CLIP_VALUE);
+    float3 displacedPosition;
+    float2 preDisplacedPositionXZ;
+    GetVertexFromTri(vertexID, preDisplacedPositionXZ, displacedPosition);
+    
+    v2f o;
+    o.position = mul(_ViewProjMatrix, float4(displacedPosition, 1.0));
+    o.positionRWS = displacedPosition;
+    o.preDisplacedPositionXZ = preDisplacedPositionXZ;
+    
+    return o;
 }
 
 #endif // _WRITE_TRANSPARENT_MOTION_VECTOR
@@ -59,7 +84,7 @@ float4 Vert(uint vertexID : SV_VertexID) : SV_Position
     #endif
 #endif
 
-void Frag(float4 iVertex : SV_Position
+void Frag(v2f i, bool facing : SV_IsFrontFace
     , out float4 outColor : SV_Target0  // outSpecularLighting when outputting split lighting
     #ifdef UNITY_VIRTUAL_TEXTURING
         , out float4 outVTFeedback : SV_Target1
@@ -74,13 +99,6 @@ void Frag(float4 iVertex : SV_Position
         , out float outputDepth : DEPTH_OFFSET_SEMANTIC
 )
 {
-    uint oceanScreenTextureSample = _OceanScreenTexture[iVertex.xy];
-    
-    if (!GetWaterSurfaceMask(oceanScreenTextureSample))
-    {
-        discard;
-    }
-    
 #ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
     // Init outMotionVector here to solve compiler warning (potentially unitialized variable)
     // It is init to the value of forceNoMotion (with 2.0)
@@ -93,26 +111,16 @@ void Frag(float4 iVertex : SV_Position
     
     // ========== //
     
-    float waterDepth = saturate(_WaterDepthTexture[iVertex.xy]);
-
-    float4 posNDC = float4(iVertex.xy / _ScreenSize.xy, 1.0, 1.0);
-    float4 posCS = float4(posNDC.xy * 2.0 - 1.0, waterDepth, 1.0);
-#if UNITY_UV_STARTS_AT_TOP
-    posCS.y = -posCS.y;
-#endif
-    float4 posRWS = mul(_InvViewProjMatrix, posCS);
-    posRWS.xyz /= posRWS.w;
-    
-    input.positionSS = float4(iVertex.xy, waterDepth, LinearEyeDepth(waterDepth, _ZBufferParams));
-    input.positionRWS = posRWS.xyz;
-    input.positionPredisplacementRWS = input.positionRWS;
+    input.positionSS = float4(i.position.xy, i.position.z, LinearEyeDepth(i.position.z, _ZBufferParams));
+    input.positionRWS = i.positionRWS;
+    input.positionPredisplacementRWS = float3(i.preDisplacedPositionXZ.x, 0.0, i.preDisplacedPositionXZ.y);
     input.positionPixel = input.positionSS.xy;
     input.texCoord1 = 0;
     input.texCoord2 = 0;
     input.color = 0;
     input.tangentToWorld = M_3x3_identity;
     input.primitiveID = 0;
-    input.isFrontFace = !GetUnderwaterMask(oceanScreenTextureSample);
+    input.isFrontFace = facing;
     
     // ========== //
     

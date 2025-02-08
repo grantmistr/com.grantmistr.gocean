@@ -36,6 +36,7 @@ Texture2DArray<float4> _SpectrumTexture;
 Texture2DArray<float> _CameraDepthTexture;
 Texture2D<float> _WaterDepthTexture;
 Texture2D _ScreenWaterNoiseTexture;
+float4 _ScreenWaterNoiseTexture_TexelSize;
 
 float4  _PatchHighestWaveCount, _PatchLowestWaveCount;
 float   _MaxSliceDepth, _MinSliceDepth, _LightRayFadeInDistance, _LightRayTiling, _LightRayDefinition, _LightRayShadowMultiplier,
@@ -45,8 +46,39 @@ const static int2 coordOffset[8] = { int2(-1, -1), int2(0, -1), int2(1, -1), int
 const static uint slices = 8;
 const static float sliceStep = 1.0 / (float) slices;
 
-float CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, float prevFrameScreenWater)
+void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inout uint cachedTime, out float screenWater)
 {
+    uint currFrameTime = ((uint) (_Time.x * _ScreenWaterFadeSpeed)) % 63u; // looped value 0 - 62
+    uint nextFrameTime = ((uint) (_Time.x * _ScreenWaterFadeSpeed + unity_DeltaTime.x * _ScreenWaterFadeSpeed)) % 63u;
+    
+    if (underwaterMask)
+    {
+        cachedTime = currFrameTime;
+        screenWater = 1.0;
+        return;
+    }
+    
+    if (cachedTime == 63u)
+    {
+        screenWater = 0.0;
+        return;
+    }
+    
+    int currFrameTimeRemap = int(currFrameTime) - int(cachedTime);
+    currFrameTimeRemap = currFrameTimeRemap < 0 ? 63 + currFrameTimeRemap : currFrameTimeRemap;
+    
+    int nextFrameTimeRemap = int(nextFrameTime) - int(cachedTime);
+    nextFrameTimeRemap = nextFrameTimeRemap < 0 ? 63 + nextFrameTimeRemap : nextFrameTimeRemap;
+    
+    if (nextFrameTimeRemap < currFrameTimeRemap)
+    {
+        cachedTime = 63u;
+        screenWater = 0.0;
+        return;
+    }
+    
+    float currFrameTime01 = (float) currFrameTimeRemap / 62.0;
+    
     float aspect = _ScreenSize.x / _ScreenSize.y;
     float2x2 m = GetRotationMatrixWithAspectRatio(_CameraZRotation, aspect);
     float2 uvScreen = positionCS;
@@ -55,26 +87,10 @@ float CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, flo
     uvScreen.x *= aspect;
     
     float flowMask = _ScreenWaterNoiseTexture.SampleLevel(sampler_Linear_Repeat, uvScreen, 0.0).x;
-    float2 flowDirection = mul(m, float2(0.0, -1.0));
     
-    int2 dim = (int2) _ScreenSize.xy - 1;
-    float contribution = 0.0;
-    [unroll(8)]
-    for (int i = 0; i < 8; i++)
-    {
-        int2 coord = (int2) ID.xy + coordOffset[i];
-        coord = clamp(coord, int2(0, 0), dim);
-        bool valid = dot((float2) coordOffset[i], flowDirection) < 0.0;
-        
-        contribution += ExtractScreenWater(_OceanScreenTexture[coord]) * valid;
-    }
+    screenWater = saturate(flowMask - currFrameTime01);
     
-    float screenWater = prevFrameScreenWater;
-    screenWater -= saturate(_ScreenWaterFadeSpeed * unity_DeltaTime.x);
-    screenWater += saturate(contribution * flowMask * unity_DeltaTime.x);
-    screenWater = saturate(screenWater + underwaterMask * 2.0);
-    
-    return screenWater;
+    return;
 }
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
@@ -88,8 +104,8 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
     }
     
     uint oceanScreenTextureSample = _OceanScreenTexture[ID.xy];
+    uint cachedTime = ExtractCachedTime(oceanScreenTextureSample);
     bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
-    float prevFrameScreenWater = ExtractScreenWater(oceanScreenTextureSample);
     float waterDepth = _WaterDepthTexture[ID.xy].x;
     float sceneDepth = _CameraDepthTexture[uint3(ID.xy, 0)].x;
     float viewDepth = RawToViewDepth(sceneDepth, _ZBufferParams);
@@ -106,10 +122,7 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
         L.forward
     };
     
-    // Try and get distant color (where view depth would be > camera far plane) to match close light ray color.
-    float distantLightRayValue = 0.3 + 0.7 / ((_LightRayDefinition + _Turbulence) / _PatchHighestWaveCount[0] + 1.0);
-    
-    float heightDelta = GetLightRayHeightFade(_WorldSpaceCameraPos_Internal.xyz, _WaterHeight, _CausticFadeDepth);
+    //float heightDelta = GetLightRayHeightFade(_WorldSpaceCameraPos_Internal.xyz, _WaterHeight, _CausticFadeDepth);
     
     float startDepth = underwaterMask ? max(_MinSliceDepth, _ProjectionParams.y) : waterViewDepth;
     
@@ -177,7 +190,7 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
         //waterDepthTest = saturate(waterDepthTest);
         //float depthTest = min(saturate(viewDepth - cd.viewDepth), waterDepthTest);
         
-        //float heightDelta = GetLightRayHeightFade(cd.positionWS, _WaterHeight, _UnderwaterFogFadeDistance);
+        float heightDelta = GetLightRayHeightFade(cd.positionWS, _WaterHeight, _CausticFadeDepth);
         float fadeIn = GetLightRayFadeIn(startDepth, cd.viewDepth, _LightRayFadeInDistance);
         //float distanceFade = GetUnderwaterDistanceFade(underwaterMask ? cd.viewDepth : cd.viewDepth - waterViewDepth, _MaxSliceDepth * 2.0);
         
@@ -199,8 +212,11 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
     sum = lerp(_LightRayStrengthInverse, sum, saturate(dot(L.forward, float3(0.0, -1.0, 0.0))));
     sum = pow(saturate(sum), _LightRayDefinition);
     
-    float screenWater = CalculateScreenWater(cd.positionCS.xy, ID, underwaterMask, prevFrameScreenWater);
+    float screenWater;
+    CalculateScreenWater(cd.positionCS.xy, ID, underwaterMask, cachedTime, screenWater);
     
-    _OceanScreenTexture[ID.xy] = EncodeScreenWater(screenWater, oceanScreenTextureSample);
+    EncodeCachedTime(cachedTime, oceanScreenTextureSample);
+    
+    _OceanScreenTexture[ID.xy] = oceanScreenTextureSample;
     _TemporaryBlurTexture[ID.xy] = float2(sum, screenWater);
 }

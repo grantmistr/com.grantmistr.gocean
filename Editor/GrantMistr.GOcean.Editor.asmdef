@@ -1,12 +1,14 @@
 {
-    "name": "Cheddabunny.GOcean",
+    "name": "GrantMistr.GOcean.Editor",
     "rootNamespace": "",
     "references": [
-        "Unity.Mathematics",
-        "Unity.RenderPipelines.Core.Runtime",
-        "Unity.RenderPipelines.HighDefinition.Runtime"
+        "GrantMistr.GOcean",
+        "Unity.RenderPipelines.Core.Editor",
+        "Unity.RenderPipelines.HighDefinition.Editor"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

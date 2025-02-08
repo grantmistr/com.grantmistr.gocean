@@ -228,36 +228,8 @@ namespace GOcean
                 );
             }
 
-            //RenderPipelineSettings currentSettings = (GraphicsSettings.currentRenderPipeline as HDRenderPipelineAsset).currentPlatformRenderPipelineSettings;
-            //GraphicsFormat graphicsFormat = (GraphicsFormat)currentSettings.colorBufferFormat;
-
-            //if (temporaryColorTexture == null)
-            //{
-            //    temporaryColorTexture = rtHandleSystem.Alloc(
-            //        Vector2.one,
-            //        1,
-            //        DepthBits.None,
-            //        graphicsFormat,
-            //        FilterMode.Bilinear,
-            //        TextureWrapMode.Clamp,
-            //        TextureDimension.Tex2D,
-            //        name: "TemporaryColorTexture"
-            //    );
-            //}
-            //else if (temporaryColorTexture.rt.graphicsFormat != graphicsFormat)
-            //{
-            //    temporaryColorTexture.Release();
-            //    temporaryColorTexture = rtHandleSystem.Alloc(
-            //        Vector2.one,
-            //        1,
-            //        DepthBits.None,
-            //        graphicsFormat,
-            //        FilterMode.Bilinear,
-            //        TextureWrapMode.Clamp,
-            //        TextureDimension.Tex2D,
-            //        name: "TemporaryColorTexture"
-            //    );
-            //}
+            RenderPipelineSettings currentSettings = (GraphicsSettings.currentRenderPipeline as HDRenderPipelineAsset).currentPlatformRenderPipelineSettings;
+            GraphicsFormat graphicsFormat = (GraphicsFormat)currentSettings.colorBufferFormat;
 
             if (temporaryColorTexture == null)
             {
@@ -265,8 +237,22 @@ namespace GOcean
                     Vector2.one,
                     1,
                     DepthBits.None,
-                    GraphicsFormat.R16G16B16A16_SFloat,
-                    FilterMode.Point,
+                    graphicsFormat,
+                    FilterMode.Bilinear,
+                    TextureWrapMode.Clamp,
+                    TextureDimension.Tex2D,
+                    name: "TemporaryColorTexture"
+                );
+            }
+            else if (temporaryColorTexture.rt.graphicsFormat != graphicsFormat)
+            {
+                temporaryColorTexture.Release();
+                temporaryColorTexture = rtHandleSystem.Alloc(
+                    Vector2.one,
+                    1,
+                    DepthBits.None,
+                    graphicsFormat,
+                    FilterMode.Bilinear,
                     TextureWrapMode.Clamp,
                     TextureDimension.Tex2D,
                     name: "TemporaryColorTexture"
@@ -359,18 +345,11 @@ namespace GOcean
 
         public void DrawWaterForward()
         {
-            //ocean.DistantOceanM.SetPass(shaderPassForwardDistantOcean);
             Graphics.RenderPrimitives(distantOceanRenderParams, MeshTopology.Triangles, 3, 1);
-            //Graphics.DrawProcedural(ocean.DistantOceanM, MAX_BOUNDS, MeshTopology.Triangles, 3, 1, null, null, ShadowCastingMode.Off, false, 0);
 
             if (components.Mesh.DrawMesh)
             {
-                //ocean.OceanM.SetPass(shaderPassForwardOcean);
-                //oceanRenderParams.worldBounds = components.Mesh.MeshBounds;
-                //Graphics.RenderPrimitivesIndirect(oceanRenderParams, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, 1, (int)Mesh.IndirectStartCommand.VERTEX_COUNT);
-                Graphics.RenderPrimitives(oceanRenderParams, MeshTopology.Triangles, 3, 1);
-                //Graphics.DrawProceduralIndirect(ocean.OceanM, components.Mesh.MeshBounds, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer,
-                //    (int)Mesh.IndirectStartCommand.VERTEX_COUNT, null, null, ShadowCastingMode.Off, false, 0);
+                Graphics.RenderPrimitivesIndirect(oceanRenderParams, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, 1, (int)Mesh.IndirectStartCommand.VERTEX_COUNT);
             }
         }
             
@@ -381,8 +360,7 @@ namespace GOcean
 
             if (components.Mesh.DrawMesh)
             {
-                CoreUtils.DrawFullScreen(ctx.cmd, ocean.OceanM, null, shaderPassForwardOcean);
-                //ctx.cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.OceanM, shaderPassForwardOcean, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectStartCommand.VERTEX_COUNT);
+                ctx.cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.OceanM, shaderPassForwardOcean, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectStartCommand.VERTEX_COUNT);
             }
         }
 

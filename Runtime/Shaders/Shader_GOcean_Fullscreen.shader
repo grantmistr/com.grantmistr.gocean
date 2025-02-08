@@ -152,7 +152,7 @@ Shader "GOcean/Fullscreen"
     
         uint oceanScreenTextureSample = _OceanScreenTexture[varyings.positionCS.xy];
         bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
-        bool waterSurfaceMask = GetCombinedWaterSurfaceMask(oceanScreenTextureSample);
+        bool waterSurfaceMask = GetWaterSurfaceMask(oceanScreenTextureSample);
     
         if (!(underwaterMask || waterSurfaceMask))
         {
@@ -240,7 +240,7 @@ Shader "GOcean/Fullscreen"
             c = clamp(c, int2(0, 0), dim);
             bool valid = dot((float2) coordOffset[i], flowDirection) < 0.0;
         
-            contribution += ExtractScreenWater(_OceanScreenTexture[c]) * valid;
+            //contribution += ExtractScreenWater(_OceanScreenTexture[c]) * valid;
         }
     
         float screenWater = prevFrameScreenWater;
@@ -258,7 +258,7 @@ Shader "GOcean/Fullscreen"
     
         uint oceanScreenTextureSample = _OceanScreenTexture[coord];
         bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
-        float prevFrameScreenWater = ExtractScreenWater(oceanScreenTextureSample);
+        float prevFrameScreenWater = ExtractCachedTime(oceanScreenTextureSample);
         float waterDepth = _WaterDepthTexture[coord].x;
         float sceneDepth = LoadCameraDepth(coord).x;
         float viewDepth = RawToViewDepth(sceneDepth, _ZBufferParams);

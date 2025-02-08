@@ -21,6 +21,7 @@ namespace GOcean
         {
             CustomPassInjectionPoint.BeforeRendering,
             CustomPassInjectionPoint.BeforePreRefraction,
+            //CustomPassInjectionPoint.BeforeTransparent,
             CustomPassInjectionPoint.BeforePostProcess
         };
 
@@ -64,6 +65,9 @@ namespace GOcean
                     case 1:
                         v.customPasses.Add(new BeforePreRefractionCustomPass(ocean, components));
                         break;
+                    //case 2:
+                    //    v.customPasses.Add(new BeforeTransparentCustomPass(ocean, components));
+                    //    break;
                     case 2:
                         v.customPasses.Add(new BeforePostProcessCustomPass(ocean, components));
                         break;

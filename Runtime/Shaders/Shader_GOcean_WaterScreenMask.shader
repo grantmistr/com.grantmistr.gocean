@@ -34,7 +34,7 @@
             ZTest Off
             Cull Back
             Blend Off
-
+        
             HLSLPROGRAM
 
             #pragma target 4.5
@@ -101,7 +101,7 @@
             ZTest Less
             Cull Back
             Blend Off
-            ColorMask B
+            ColorMask R
 
             HLSLPROGRAM
             
@@ -180,7 +180,7 @@
             ZTest Off
             Cull Back
             Blend Off
-            ColorMask BA            
+            ColorMask RG            
 
             HLSLPROGRAM
 
@@ -242,7 +242,7 @@
             ZTest LEqual
             Cull Off
             Blend Off
-            ColorMask RGA
+            ColorMask G
 
             HLSLPROGRAM
             
@@ -275,7 +275,7 @@
             ZTest Off
             Cull Back
             Blend Off
-            ColorMask A
+            ColorMask G
 
             HLSLPROGRAM
             

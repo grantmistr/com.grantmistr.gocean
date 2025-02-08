@@ -199,7 +199,7 @@ Material:
     - _CausticAboveWaterFadeDistance: 20
     - _CausticDefinition: 10
     - _CausticDistortion: 0.002
-    - _CausticFadeDepth: 400
+    - _CausticFadeDepth: 600
     - _CausticTiling: 0.8
     - _CoatMask: 0
     - _CullMode: 2
@@ -246,7 +246,7 @@ Material:
     - _LightRayTiling: 1
     - _LinkDetailsWithBase: 1
     - _MaterialID: 1
-    - _MaxSliceDepth: 50
+    - _MaxSliceDepth: 100
     - _Metallic: 0
     - _MetallicRemapMax: 1
     - _MetallicRemapMin: 0
@@ -266,7 +266,7 @@ Material:
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
     - _RefractionModel: 0
-    - _ScreenWaterFadeSpeed: 2.6
+    - _ScreenWaterFadeSpeed: 600
     - _ScreenWaterTiling: 0.2
     - _Smoothness: 0.9
     - _SmoothnessRemapMax: 1
@@ -328,7 +328,7 @@ Material:
     - _UVDetailsMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
-    - _UnderwaterFogColor: {r: 0.6179246, g: 0.80317324, b: 1, a: 1}
-    - _WaterColor: {r: 0.3915094, g: 0.70572996, b: 1, a: 1}
+    - _UnderwaterFogColor: {r: 0.6179246, g: 0.8031732, b: 1, a: 1}
+    - _WaterColor: {r: 0.3915094, g: 0.70573, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

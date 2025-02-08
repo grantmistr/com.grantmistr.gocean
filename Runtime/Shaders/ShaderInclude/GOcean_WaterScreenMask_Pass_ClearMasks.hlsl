@@ -11,7 +11,7 @@ float4 vert(uint vertexID : SV_VertexID) : SV_Position
 
 uint frag() : SV_Target
 {
-    return SCREEN_WATER_BIT_MASK;
+    return CACHED_TIME_BIT_MASK;
 }
 
 #endif

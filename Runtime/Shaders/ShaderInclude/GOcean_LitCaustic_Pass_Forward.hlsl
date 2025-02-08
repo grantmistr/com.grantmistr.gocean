@@ -4,6 +4,7 @@
 
 #include "GOcean_Constants.hlsl"
 #include "GOcean_UnderwaterSampling.hlsl"
+#include "GOcean_GlobalTextures.hlsl"
 
 #ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/MotionVectorVertexShaderCommon.hlsl"
@@ -265,9 +266,9 @@ void Frag(PackedVaryingsToPS packedInput
                 float waterDepth = _WaterDepthTexture[posInput.positionSS].x;
         
 #if UNITY_REVERSED_Z
-                bool waterMask = waterDepth > posInput.deviceDepth;
+                bool waterMask = waterDepth >= posInput.deviceDepth;
 #else
-                bool waterMask = waterDepth < posInput.deviceDepth;
+                bool waterMask = waterDepth <= posInput.deviceDepth;
 #endif
         
                 bool underwaterMask = GetUnderwaterMask(_OceanScreenTexture[posInput.positionSS]);

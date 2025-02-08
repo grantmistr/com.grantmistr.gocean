@@ -14,7 +14,7 @@ float2 frag(float4 input : SV_Position) : SV_Target
     int2 sampleCoord = (int2) input.xy;
     int2 maxCoord = ((int2) _ScreenSize.xy) - 1;
     float4 screenTextureSample = _TemporaryColorTexture[sampleCoord];
-    float lightRays = screenTextureSample.z;
+    float lightRays = screenTextureSample.x;
     float opaqueDepth = _CameraDepthTexture[uint3(sampleCoord, 0)];
     float waterDepth = _WaterDepthTexture[sampleCoord];
 #ifdef UNITY_REVERSED_Z
@@ -33,7 +33,7 @@ float2 frag(float4 input : SV_Position) : SV_Target
         c.y += i - blurOffset;
         c.y = clamp(c.y, 0, maxCoord.y);
         
-        float2 s = _TemporaryColorTexture[c].zw;
+        float2 s = _TemporaryColorTexture[c].xy;
         
         float opaqueDepth0 = _CameraDepthTexture[uint3(c, 0)];
         float waterDepth0 = _WaterDepthTexture[c];

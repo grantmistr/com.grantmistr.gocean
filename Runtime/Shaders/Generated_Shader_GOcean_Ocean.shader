@@ -110,10 +110,10 @@ Shader "GOcean/Ocean"
                 "LightMode" = "Forward"
             }
         
-            Cull Back
+            Cull Off
             Blend Off
             ZTest LEqual
-            ZWrite Off
+            ZWrite On
 
             Stencil
             {
@@ -335,11 +335,9 @@ Shader "GOcean/Ocean"
             
                 float sceneDepth = LoadCameraDepth(input.positionSS.xy);
                 float sceneDepthView = RawToViewDepth(sceneDepth, _ZBufferParams);
-                float waterDepth = input.positionSS.z;
-                float waterViewDepth = input.positionSS.w;
                 float2 posNDC = input.positionSS.xy * _ScreenSize.zw;
     
-                float2 preDisplacedPositionXZ = _TemporaryColorTexture[input.positionSS.xy].xy;
+                float2 preDisplacedPositionXZ = input.positionPredisplacementRWS.xz;
                 float2 preDisplacedPositionXZAbsWS = preDisplacedPositionXZ + _WorldSpaceCameraPos_Internal.xz;
     
                 float lengthMaskSquared = LengthSquared(preDisplacedPositionXZ);
@@ -368,25 +366,11 @@ Shader "GOcean/Ocean"
                 float2 uv2 = preDisplacedPositionXZAbsWS / _PatchSize.z;
                 float2 uv3 = preDisplacedPositionXZAbsWS / _PatchSize.w;
     
-                float bias = -fwidth(waterViewDepth) * 0.04;
-                //float LOD = pow(waterViewDepth, 1.0 / _UnderwaterSurfaceEmissionStrength);
-                //float4 grad = float4(ddx(preDisplacedPositionXZ * _UnderwaterSurfaceEmissionStrength), ddy(preDisplacedPositionXZ * _UnderwaterSurfaceEmissionStrength)) * waterViewDepth;
-    
                 float4 spectrumSample;
-                spectrumSample =  _SpectrumTexture.SampleBias(SamplerState_Linear_Repeat, float3(uv0, 1.0), bias);
-                spectrumSample += _SpectrumTexture.SampleBias(SamplerState_Linear_Repeat, float3(uv1, 3.0), bias);
-                spectrumSample += _SpectrumTexture.SampleBias(SamplerState_Linear_Repeat, float3(uv2, 5.0), bias);
-                spectrumSample += _SpectrumTexture.SampleBias(SamplerState_Linear_Repeat, float3(uv3, 7.0), bias);
-    
-                //spectrumSample =  _SpectrumTexture.SampleLevel(SamplerState_Linear_Repeat, float3(uv0, 1.0), LOD);
-                //spectrumSample += _SpectrumTexture.SampleLevel(SamplerState_Linear_Repeat, float3(uv1, 3.0), LOD);
-                //spectrumSample += _SpectrumTexture.SampleLevel(SamplerState_Linear_Repeat, float3(uv2, 5.0), LOD);
-                //spectrumSample += _SpectrumTexture.SampleLevel(SamplerState_Linear_Repeat, float3(uv3, 7.0), LOD);
-    
-                //spectrumSample =  _SpectrumTexture.SampleGrad(SamplerState_Linear_Repeat, float3(uv0, 1.0), grad.xy, grad.zw);
-                //spectrumSample += _SpectrumTexture.SampleGrad(SamplerState_Linear_Repeat, float3(uv1, 3.0), grad.xy, grad.zw);
-                //spectrumSample += _SpectrumTexture.SampleGrad(SamplerState_Linear_Repeat, float3(uv2, 5.0), grad.xy, grad.zw);
-                //spectrumSample += _SpectrumTexture.SampleGrad(SamplerState_Linear_Repeat, float3(uv3, 7.0), grad.xy, grad.zw);
+                spectrumSample =  _SpectrumTexture.Sample(SamplerState_Linear_Repeat, float3(uv0, 1.0));
+                spectrumSample += _SpectrumTexture.Sample(SamplerState_Linear_Repeat, float3(uv1, 3.0));
+                spectrumSample += _SpectrumTexture.Sample(SamplerState_Linear_Repeat, float3(uv2, 5.0));
+                spectrumSample += _SpectrumTexture.Sample(SamplerState_Linear_Repeat, float3(uv3, 7.0));
     
                 float4 stochasticSample = StochasticSample(_SpectrumTexture, SamplerState_Trilinear_Repeat, uv0, 9.0);
     
@@ -472,7 +456,7 @@ Shader "GOcean/Ocean"
                 surface.BaseColor = waterColor;
                 surface.Emission = float3(0.0, 0.0, 0.0);
                 surface.Alpha = 1.0;
-                surface.BentNormal = float3(1.0, 0.0, 0.0);
+                surface.BentNormal = float3(0.0, 0.0, 0.0);
                 surface.Smoothness = smoothness;
                 surface.Occlusion = 1.0;
                 surface.NormalWS = normal;

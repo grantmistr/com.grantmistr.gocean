@@ -12,7 +12,7 @@ float4 vert(uint vertexID : SV_VertexID) : SV_Position
 float4 frag(float4 position : SV_Position, out float outputDepth : SV_Depth) : SV_Target
 {
     float4 posNDC = float4(position.xy / _ScreenSize.xy, 1.0, 1.0);
-    float4 posCS = float4(posNDC.xy * 2.0 - 1.0, 1.0, 1.0);
+    float4 posCS = float4(posNDC.xy * 2.0 - 1.0, GetNearClipValue(), 1.0);
 #ifdef UNITY_UV_STARTS_AT_TOP
         posCS.y = -posCS.y;
 #endif
@@ -30,26 +30,21 @@ float4 frag(float4 position : SV_Position, out float outputDepth : SV_Depth) : S
     posRWS.xz = (dir.xz * tiling) / max(abs(dir.y), 0.001);
     posRWS.y = _WaterHeight - _WorldSpaceCameraPos_Internal.y;
     posCS = mul(_ViewProjMatrix, float4(posRWS.xyz, 1.0));
+    posCS.z /= posCS.w;
     
     float2 uvWS = posRWS.xz + _WorldSpaceCameraPos_Internal.xz;
     
     bool inSquare = IsInSquare(_CameraPositionStepped.xy, _ChunkGridResolution * _ChunkSize, uvWS);
     bool mask = oceanHeightMask ? !hemisphereMask : hemisphereMask;
     
-#if UNITY_REVERSED_Z
-    bool isNotFarPlane = (posCS.z + 0.00000001) > 0.0;
-#else
-    bool isNotFarPlane = (posCS.z - 0.00000001) < 1.0;
-#endif
-    
-    if (mask || (inSquare && isNotFarPlane))
+    if (mask || (inSquare && !IsFarPlane(posCS.z, 0.00000001)))
     {
         discard;
     }
     
-    outputDepth = saturate(posCS.z / posCS.w);
+    outputDepth = saturate(posCS.z);
     
-    return float4(0.0, 0.0, 0.0, -1.0);
+    return float4(0.0, 1.0, 0.0, 0.0);
 }
 
 #endif

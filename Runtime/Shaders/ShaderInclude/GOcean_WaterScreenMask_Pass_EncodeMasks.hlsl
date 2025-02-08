@@ -13,16 +13,15 @@ float4 vert(uint vertexID : SV_VertexID) : SV_Position
 uint frag(float4 positionSS : SV_Position) : SV_Target
 {
     float4 s = _TemporaryColorTexture[positionSS.xy];
-    bool underwaterMask = s.z > 0.0;
-    bool waterSurfaceMask = s.w > 0.0;
-    bool distantWaterSurfaceMask = s.w < 0.0;
+    bool underwaterMask = s.x > 0.0;
+    bool waterSurfaceMask = s.y > 0.0;
     
     // remove holes //
     
     float4 D = _TemporaryColorTexture[int2(positionSS.x, positionSS.y - 2)];
     float4 U = _TemporaryColorTexture[int2(positionSS.x, positionSS.y + 2)];
     
-    bool invalid = ((underwaterMask != D.z) && (underwaterMask != U.z));
+    bool invalid = ((underwaterMask != D.x) && (underwaterMask != U.x));
     underwaterMask = invalid ? !underwaterMask : underwaterMask;
     
     //invalid = ((waterSurfaceMask != D.w) && (waterSurfaceMask != U.w));
@@ -33,7 +32,7 @@ uint frag(float4 positionSS : SV_Position) : SV_Target
     
     // ------------ //
     
-    return EncodeMasks(underwaterMask, waterSurfaceMask, distantWaterSurfaceMask);
+    return EncodeMasks(underwaterMask, waterSurfaceMask);
 }
 
 #endif

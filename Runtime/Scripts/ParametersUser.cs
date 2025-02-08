@@ -32,7 +32,10 @@ namespace GOcean
 
         private void OnEnable()
         {
-            generic.SetDiffusionProfile();
+            if (generic != null)
+            {
+                generic.SetDiffusionProfile();
+            }
         }
     }
 
@@ -124,7 +127,7 @@ namespace GOcean
         [Min(1f)]
         public float maxPatchSize = 1024f;
         [Tooltip("Scale ratio of a spectrum with MaxPatchSize. MaxPatchSize divided by this value to get the size of the spectrum.")]
-        public PatchScaleRatios patchScaleRatios = new PatchScaleRatios(1f, 2.1f, 3.9f, 9f);
+        public PatchScaleRatios patchScaleRatios = new PatchScaleRatios(1f, 2f, 4f, 8f);
         [Tooltip("Low wave frequency cutoff. No waves simulated with a frequency below this value.")]
         [Min(0f)]
         public float lowWaveCutoff = 0.015f;
@@ -247,7 +250,7 @@ namespace GOcean
         [Min(0f)]
         public float screenWaterTiling = 0.2f;
         [Tooltip("Behavior of fading water can be quite different in editor versus play mode.")]
-        [Min(1f)]
+        [Min(0f)]
         public float screenWaterFadeSpeed = 1.3f;
 
         public override void Update(ComponentContainer components)

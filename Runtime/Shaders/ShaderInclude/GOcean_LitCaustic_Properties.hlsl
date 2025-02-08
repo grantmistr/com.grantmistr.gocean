@@ -4,15 +4,12 @@
 // Otherwise those parameters are not bound correctly at runtime.
 // ===========================================================================
 
+#include "GOcean_GlobalTextures.hlsl"
+
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/DebugMipmapStreamingMacros.hlsl"
 
 TEXTURE2D(_EmissiveColorMap);
 SAMPLER(sampler_EmissiveColorMap);
-
-TEXTURE2D(_OceanScreenTexture);
-TEXTURE2D(_WaterDepthTexture);
-TEXTURE2D(_RandomNoiseTexture);
-TEXTURE2D_ARRAY(_SpectrumTexture);
 
 #ifndef LAYERED_LIT_SHADER
 

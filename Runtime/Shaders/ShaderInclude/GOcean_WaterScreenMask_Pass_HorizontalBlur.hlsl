@@ -49,8 +49,8 @@ float4 frag(float4 input : SV_Position) : SV_Target
         sum += s * weights[i];
     }
     
-    // write to temp color tex BA
-    return float4(0.0, 0.0, sum);
+    // write to temp color tex RG
+    return float4(sum, 0.0, 0.0);
 }
 
 #endif // GOCEAN_WATERSCREENMASK_PASS_HORIZONTALBLUR

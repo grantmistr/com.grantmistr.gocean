@@ -40,13 +40,6 @@ void Frag(float4 iVertex : SV_Position
     , out float outputDepth : DEPTH_OFFSET_SEMANTIC
 )
 {
-    uint oceanScreenTextureSample = _OceanScreenTexture[iVertex.xy];
-    
-    if (!GetDistantWaterSurfaceMask(oceanScreenTextureSample))
-    {
-        discard;
-    }
-
     FragInputs input;
 
     //======================================================================================================//
@@ -72,6 +65,18 @@ void Frag(float4 iVertex : SV_Position
     posCS = mul(_ViewProjMatrix, float4(posRWS.xyz, 1.0));
     posCS.z /= posCS.w;
 
+    float2 uvWS = posRWS.xz + _WorldSpaceCameraPos_Internal.xz;
+    
+    bool inSquare = IsInSquare(_CameraPositionStepped.xy, _ChunkGridResolution * _ChunkSize, uvWS);
+    bool mask = oceanHeightMask ? !hemisphereMask : hemisphereMask;
+    
+    if (mask || (inSquare && !IsFarPlane(posCS.z, 0.00000001)))
+    {
+        discard;
+    }
+    
+    uint oceanScreenTextureSample = _OceanScreenTexture[iVertex.xy];
+    
     input.positionSS = float4(iVertex.xy, posCS.z, LinearEyeDepth(posCS.z, _ZBufferParams));
     input.positionRWS = posRWS.xyz; // TODO maybe add spectrumSample.z
     input.positionPredisplacementRWS = input.positionRWS;

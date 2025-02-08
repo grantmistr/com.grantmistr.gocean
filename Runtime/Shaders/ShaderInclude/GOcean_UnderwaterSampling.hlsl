@@ -3,9 +3,7 @@
 
 #define UNDERWATER_MASK_BIT 0x1
 #define WATER_SURFACE_MASK_BIT 0x2
-#define DISTANT_WATER_SURFACE_MASK_BIT 0x4
-#define COMBINED_WATER_SURFACE_BIT_MASK (WATER_SURFACE_MASK_BIT | DISTANT_WATER_SURFACE_MASK_BIT)
-#define SCREEN_WATER_BIT_MASK 0xF8
+#define CACHED_TIME_BIT_MASK 0xFC
 
 #include "GOcean_HelperFunctions.hlsl"
 
@@ -135,7 +133,7 @@ float3 CalculateUnderwaterFogColor(float3 underwaterFogColor, float3 skyColor, f
     return 1.0 - (1.0 - luminance * underwaterFogColor) * (1.0 - exposedSkyColor);
 }
 
-uint EncodeMasks(float underwaterMask, float waterSurfaceMask, float distantWaterSurfaceMask)
+uint EncodeMasks(float underwaterMask, float waterSurfaceMask)
 {
     // first bit is flipped facing (1 underwater)
     // second bit is always 1 anywhere water renders
@@ -143,11 +141,11 @@ uint EncodeMasks(float underwaterMask, float waterSurfaceMask, float distantWate
     
     return
         (underwaterMask > 0.0 ? UNDERWATER_MASK_BIT : 0x0) |
-        (waterSurfaceMask > 0.0 ? WATER_SURFACE_MASK_BIT : 0x0) |
-        (distantWaterSurfaceMask > 0.0 ? DISTANT_WATER_SURFACE_MASK_BIT : 0x0);
+        (waterSurfaceMask > 0.0 ? WATER_SURFACE_MASK_BIT : 0x0);
+
 }
 
-uint EncodeMasks(bool underwaterMask, bool waterSurfaceMask, bool distantWaterSurfaceMask)
+uint EncodeMasks(bool underwaterMask, bool waterSurfaceMask)
 {
     // first bit is flipped facing (1 underwater)
     // second bit is always 1 anywhere water renders
@@ -155,8 +153,7 @@ uint EncodeMasks(bool underwaterMask, bool waterSurfaceMask, bool distantWaterSu
     
     return
         (underwaterMask ? UNDERWATER_MASK_BIT : 0x0) |
-        (waterSurfaceMask ? WATER_SURFACE_MASK_BIT : 0x0) |
-        (distantWaterSurfaceMask ? DISTANT_WATER_SURFACE_MASK_BIT : 0x0);
+        (waterSurfaceMask ? WATER_SURFACE_MASK_BIT : 0x0);
 }
 
 bool GetUnderwaterMask(uint oceanScreenTextureSample)
@@ -169,28 +166,18 @@ bool GetWaterSurfaceMask(uint oceanScreenTextureSample)
     return (oceanScreenTextureSample & WATER_SURFACE_MASK_BIT) > 0x0;
 }
 
-bool GetDistantWaterSurfaceMask(uint oceanScreenTextureSample)
-{
-    return (oceanScreenTextureSample & DISTANT_WATER_SURFACE_MASK_BIT) > 0x0;
-}
-
-bool GetCombinedWaterSurfaceMask(uint oceanScreenTextureSample)
-{
-    return (oceanScreenTextureSample & COMBINED_WATER_SURFACE_BIT_MASK) > 0x0;
-}
-
-uint EncodeScreenWater(float screenWater, uint oceanScreenTextureSample)
+void EncodeCachedTime(uint cachedTime, inout uint oceanScreenTextureSample)
 {
     // clear screen water bits
-    oceanScreenTextureSample = oceanScreenTextureSample & (~SCREEN_WATER_BIT_MASK);
+    oceanScreenTextureSample &= (~CACHED_TIME_BIT_MASK);
     
     // set bits
-    return oceanScreenTextureSample | (uint(screenWater * 31.0) << 3);
+    oceanScreenTextureSample |= (cachedTime << 2);
 }
 
-float ExtractScreenWater(uint oceanScreenTextureSample)
+uint ExtractCachedTime(uint oceanScreenTextureSample)
 {
-    return float(oceanScreenTextureSample >> 3) / 31.0;
+    return oceanScreenTextureSample >> 2;
 }
 
 // ShaderGraph
@@ -208,16 +195,6 @@ void GetUnderwaterMask_float(uint oceanScreenTextureSample, out bool underwaterM
 void GetWaterSurfaceMask_float(uint oceanScreenTextureSample, out bool waterSurfaceMask)
 {
     waterSurfaceMask = GetWaterSurfaceMask(oceanScreenTextureSample);
-}
-
-void GetDistantWaterSurfaceMask_float(uint oceanScreenTextureSample, out bool distantWaterSurfaceMask)
-{
-    distantWaterSurfaceMask = GetDistantWaterSurfaceMask(oceanScreenTextureSample);
-}
-
-void GetCombinedWaterSurfaceMask_float(uint oceanScreenTextureSample, out bool combinedWaterSurfaceMask)
-{
-    combinedWaterSurfaceMask = GetCombinedWaterSurfaceMask(oceanScreenTextureSample);
 }
 
 #endif // GOCEAN_UNDERWATER_SAMPLING

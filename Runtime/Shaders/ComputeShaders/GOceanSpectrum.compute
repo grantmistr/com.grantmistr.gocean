@@ -278,7 +278,6 @@ void SurfaceData(uint3 id : SV_DispatchThreadID)
     float foamMask = ((L.x - R.x) + (D.z - U.z)) / worldTexelSize[id.z] + _FoamBias;
     foamMask = saturate(foamMask);
     
-    float prevFrameFoamMask = _SpectrumTexture[uint3(id.xy / (uint) _PatchScaleRatios[id.z], 9)].w;
     float foam = _SpectrumTexture[index1].w;
     
     float adjacentFoam = _SpectrumTexture[uint3(offsetCoords[0], index1.z)].w;
