@@ -46,17 +46,18 @@ const static uint slices = 8;
 const static float sliceStep = 1.0 / (float) slices;
 const static float causticSourceSpectrumSlice = 9.0;
 
-void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inout uint cachedTime, out float screenWater)
+void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inout uint oceanScreenTextureSample, out float screenWater)
 {
-    uint currFrameTime = ((uint) (_Time.x * _ScreenWaterFadeSpeed)) % CACHED_TIME_MAX; // looped value 0 - 62
-    uint nextFrameTime = ((uint) (_Time.x * _ScreenWaterFadeSpeed + unity_DeltaTime.x * _ScreenWaterFadeSpeed)) % CACHED_TIME_MAX;
+    float currFrameTime = fmod(_Time.x * _ScreenWaterFadeSpeed, CACHED_TIME_MAX);
     
     if (underwaterMask)
     {
-        cachedTime = currFrameTime;
+        EncodeCachedTime((uint) currFrameTime, oceanScreenTextureSample);
         screenWater = 1.0;
         return;
     }
+    
+    uint cachedTime = ExtractCachedTime(oceanScreenTextureSample);
     
     if (cachedTime == CACHED_TIME_MAX)
     {
@@ -64,20 +65,22 @@ void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inou
         return;
     }
     
-    int currFrameTimeRemap = int(currFrameTime) - int(cachedTime);
-    currFrameTimeRemap = currFrameTimeRemap < 0 ? CACHED_TIME_MAX + currFrameTimeRemap : currFrameTimeRemap;
+    float currFrameTimeRemap = currFrameTime - float(cachedTime);
+    currFrameTimeRemap = currFrameTimeRemap < 0.0 ? CACHED_TIME_MAX + currFrameTimeRemap : currFrameTimeRemap;
     
-    int nextFrameTimeRemap = int(nextFrameTime) - int(cachedTime);
-    nextFrameTimeRemap = nextFrameTimeRemap < 0 ? CACHED_TIME_MAX + nextFrameTimeRemap : nextFrameTimeRemap;
+    float nextFrameTime = fmod((_Time.x + unity_DeltaTime.x) * _ScreenWaterFadeSpeed, CACHED_TIME_MAX);
+    
+    float nextFrameTimeRemap = nextFrameTime - float(cachedTime);
+    nextFrameTimeRemap = nextFrameTimeRemap < 0.0 ? CACHED_TIME_MAX + nextFrameTimeRemap : nextFrameTimeRemap;
     
     if (nextFrameTimeRemap < currFrameTimeRemap)
     {
-        cachedTime = CACHED_TIME_MAX;
+        EncodeCachedTime(CACHED_TIME_MAX, oceanScreenTextureSample);
         screenWater = 0.0;
         return;
     }
     
-    float currFrameTime01 = (float) currFrameTimeRemap / (CACHED_TIME_MAX - 1.0);
+    float currFrameTime01 = currFrameTimeRemap / (CACHED_TIME_MAX - unity_DeltaTime.x * _ScreenWaterFadeSpeed);
     
     float aspect = _ScreenSize.x / _ScreenSize.y;
     float2x2 m = GetRotationMatrixWithAspectRatio(_CameraZRotation, aspect);
@@ -87,7 +90,6 @@ void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inou
     uvScreen.x *= aspect;
     
     float flowMask = _ScreenWaterNoiseTexture.SampleLevel(sampler_Linear_Repeat, uvScreen, 0.0).x;
-    flowMask *= flowMask;
     
     screenWater = saturate(flowMask - currFrameTime01);
     
@@ -105,7 +107,6 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
     }
     
     uint oceanScreenTextureSample = _OceanScreenTexture[ID.xy];
-    uint cachedTime = ExtractCachedTime(oceanScreenTextureSample);
     bool underwaterMask = GetUnderwaterMask(oceanScreenTextureSample);
     float waterDepth = _WaterDepthTexture[ID.xy].x;
     float sceneDepth = _CameraDepthTexture[uint3(ID.xy, 0)].x;
@@ -213,9 +214,7 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
     sum = pow(saturate(sum), _LightRayDefinition);
     
     float screenWater;
-    CalculateScreenWater(cd.positionCS.xy, ID, underwaterMask, cachedTime, screenWater);
-    
-    EncodeCachedTime(cachedTime, oceanScreenTextureSample);
+    CalculateScreenWater(cd.positionCS.xy, ID, underwaterMask, oceanScreenTextureSample, screenWater);
     
     _OceanScreenTexture[ID.xy] = oceanScreenTextureSample;
     _TemporaryBlurTexture[ID.xy] = float2(sum, screenWater);

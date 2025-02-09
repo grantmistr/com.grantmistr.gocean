@@ -449,15 +449,15 @@ MonoBehaviour:
   fadeRadius: 0
   priority: 0
   customPasses:
-  - rid: 8760515596798132232
+  - rid: 3806890994986385767
   injectionPoint: 2
   m_TargetCamera: {fileID: 0}
   useTargetCamera: 0
   references:
     version: 2
     RefIds:
-    - rid: 8760515596798132232
-      type: {class: BeforePostProcessCustomPass, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385767
+      type: {class: BeforePostProcessCustomPass, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         m_Name: GOceanBeforePostProcess
         enabled: 1
@@ -483,15 +483,15 @@ MonoBehaviour:
   fadeRadius: 0
   priority: 0
   customPasses:
-  - rid: 8760515596798132231
+  - rid: 3806890994986385766
   injectionPoint: 4
   m_TargetCamera: {fileID: 0}
   useTargetCamera: 0
   references:
     version: 2
     RefIds:
-    - rid: 8760515596798132231
-      type: {class: BeforePreRefractionCustomPass, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385766
+      type: {class: BeforePreRefractionCustomPass, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         m_Name: GOceanBeforePreRefraction
         enabled: 1
@@ -517,15 +517,15 @@ MonoBehaviour:
   fadeRadius: 0
   priority: 0
   customPasses:
-  - rid: 8760515596798132230
+  - rid: 3806890994986385765
   injectionPoint: 0
   m_TargetCamera: {fileID: 0}
   useTargetCamera: 0
   references:
     version: 2
     RefIds:
-    - rid: 8760515596798132230
-      type: {class: BeforeRenderingCustomPass, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385765
+      type: {class: BeforeRenderingCustomPass, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         m_Name: GOceanBeforeRendering
         enabled: 1
@@ -549,12 +549,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parametersUser: {fileID: 11400000, guid: 26f1def6dd8acc44394e9447880ca980, type: 2}
   components:
-    rid: 8760515573528134104
+    rid: 3806890994986385761
   references:
     version: 2
     RefIds:
-    - rid: 8760515573528134104
-      type: {class: ComponentContainer, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385761
+      type: {class: ComponentContainer, ns: GOcean, asm: GrantMistr.GOcean}
       data: 
 --- !u!1 &189451568
 GameObject:

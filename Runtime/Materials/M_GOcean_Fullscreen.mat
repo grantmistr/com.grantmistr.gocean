@@ -115,7 +115,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ScreenWaterNoiseTexture:
-        m_Texture: {fileID: 2800000, guid: c9cffcf4147442f4394f72ea9228744c, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SpectrumTexture:
@@ -199,7 +199,7 @@ Material:
     - _CausticAboveWaterFadeDistance: 20
     - _CausticDefinition: 10
     - _CausticDistortion: 0.002
-    - _CausticFadeDepth: 600
+    - _CausticFadeDepth: 400
     - _CausticTiling: 0.8
     - _CoatMask: 0
     - _CullMode: 2
@@ -246,7 +246,7 @@ Material:
     - _LightRayTiling: 1
     - _LinkDetailsWithBase: 1
     - _MaterialID: 1
-    - _MaxSliceDepth: 100
+    - _MaxSliceDepth: 80
     - _Metallic: 0
     - _MetallicRemapMax: 1
     - _MetallicRemapMin: 0
@@ -266,7 +266,7 @@ Material:
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
     - _RefractionModel: 0
-    - _ScreenWaterFadeSpeed: 600
+    - _ScreenWaterFadeSpeed: 800
     - _ScreenWaterTiling: 0.2
     - _Smoothness: 0.9
     - _SmoothnessRemapMax: 1

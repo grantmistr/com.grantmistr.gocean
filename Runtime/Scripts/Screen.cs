@@ -46,7 +46,7 @@ namespace GOcean
 
             screenWaterNoiseTexture = u.screenWaterNoiseTexture;
             screenWaterTiling = u.screenWaterTiling;
-            screenWaterFadeSpeed = CalculateScreenWaterFadeSpeed(u.screenWaterFadeSpeed);
+            screenWaterFadeSpeed = u.screenWaterFadeSpeed;
         }
 
         public override void SetShaderParams()
@@ -165,11 +165,6 @@ namespace GOcean
             // vertical blur; writes RG to temp blur tex
             CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryBlurTexture, ClearFlag.None);
             CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, ctx.propertyBlock, shaderPassVerticalBlur);
-        }
-
-        private float CalculateScreenWaterFadeSpeed(float screenWaterFadeSpeed)
-        {
-            return screenWaterFadeSpeed * 600f;
         }
     }
 }

@@ -50,7 +50,7 @@ namespace GOcean
     {
         public const string DIFFUSION_PROFILE_RESOURCE_STRING = "GOcean_DefaultOceanDiffusionProfile";
 
-        [Tooltip("Write water depth (water surface and screen water) to depth buffer before post processing. Useful for depth of field.")]
+        [Tooltip("Write screen water to depth buffer before post processing. Useful for depth of field.")]
         public bool waterWritesToDepth = true;
         public int randomSeed = 0;
         public float waterHeight = 100f;
@@ -249,8 +249,8 @@ namespace GOcean
         public Texture2D screenWaterNoiseTexture;
         [Min(0f)]
         public float screenWaterTiling = 0.2f;
-        [Min(1f)]
-        public float screenWaterFadeSpeed = 1f;
+        [Min(0f)]
+        public float screenWaterFadeSpeed = 800f;
 
         public override void Update(ComponentContainer components)
         {
@@ -301,7 +301,7 @@ namespace GOcean
         [Min(1f)]
         public float lightRayFadeInDistance = 1f;
         [Min(1f)]
-        public float maxSliceDepth = 100f;
+        public float maxSliceDepth = 80f;
         [Min(0.01f)]
         public float minSliceDepth = 1f;
 

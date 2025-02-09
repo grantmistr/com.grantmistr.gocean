@@ -116,7 +116,7 @@ MonoBehaviour:
       data:
         screenWaterNoiseTexture: {fileID: 2800000, guid: c9cffcf4147442f4394f72ea9228744c, type: 3}
         screenWaterTiling: 0.2
-        screenWaterFadeSpeed: 1.3
+        screenWaterFadeSpeed: 800
     - rid: 3806890946872738042
       type: {class: CausticParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
@@ -136,7 +136,7 @@ MonoBehaviour:
         lightRayTiling: 1
         lightRayDefinition: 1.25
         lightRayFadeInDistance: 1
-        maxSliceDepth: 100
+        maxSliceDepth: 80
         minSliceDepth: 1
     - rid: 3806890946872738044
       type: {class: MeshParamsUser, ns: GOcean, asm: GrantMistr.GOcean}

@@ -13,50 +13,50 @@ MonoBehaviour:
   m_Name: Ocean Parameters
   m_EditorClassIdentifier: 
   generic:
-    rid: 8760515485916201239
+    rid: 3806890994986385748
   wind:
-    rid: 8760515485916201240
+    rid: 3806890994986385749
   displacement:
-    rid: 8760515485916201241
+    rid: 3806890994986385750
   surface:
-    rid: 8760515485916201242
+    rid: 3806890994986385751
   foam:
-    rid: 8760515485916201243
+    rid: 3806890994986385752
   terrain:
-    rid: 8760515485916201244
+    rid: 3806890994986385753
   screen:
-    rid: 8760515485916201245
+    rid: 3806890994986385754
   caustic:
-    rid: 8760515485916201246
+    rid: 3806890994986385755
   underwater:
-    rid: 8760515485916201247
+    rid: 3806890994986385756
   mesh:
-    rid: 8760515485916201248
+    rid: 3806890994986385757
   references:
     version: 2
     RefIds:
-    - rid: 8760515485916201239
-      type: {class: GenericParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385748
+      type: {class: GenericParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         waterWritesToDepth: 1
         randomSeed: 0
         waterHeight: 44
         diffusionProfile: {fileID: 11400000, guid: 0ff5f42b178590e47af75d21ee34a2bd, type: 2}
-    - rid: 8760515485916201240
-      type: {class: WindParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385749
+      type: {class: WindParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
-        windSpeed: 11
+        windSpeed: 9
         windDirection: 5
         windSpeedMin: 3
         windSpeedMax: 100
-    - rid: 8760515485916201241
-      type: {class: DisplacementParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385750
+      type: {class: DisplacementParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         spectrumTextureResolution: 512
         gravity: 9.81
         speed: 1
         amplitude: 0.5
-        steepness: 0.9
+        steepness: 0.8
         turbulence: 0.2
         smoothing: 0
         maxPatchSize: 1024
@@ -67,21 +67,21 @@ MonoBehaviour:
           w: 8
         lowWaveCutoff: 0.015
         highWaveCutoff: 100
-    - rid: 8760515485916201242
-      type: {class: SurfaceParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385751
+      type: {class: SurfaceParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         normalStrength: 1
         smoothness: 0.9
         distantSmoothness: 0.7
         smoothnessTransitionDistance: 2000
         refractionStrength: 5
-        waterColor: {r: 0.3915094, g: 0.70572996, b: 1, a: 1}
-        scatteringColor: {r: 0.2520915, g: 0.38964808, b: 0.5188679, a: 1}
+        waterColor: {r: 0.3915094, g: 0.70573, b: 1, a: 1}
+        scatteringColor: {r: 0.2520915, g: 0.3896481, b: 0.5188679, a: 1}
         scatteringFalloff: 5
-    - rid: 8760515485916201243
-      type: {class: FoamParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385752
+      type: {class: FoamParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
-        foamTexture: {fileID: 2800000, guid: 3848ab24e413ebf42a03f6e824055e0f, type: 3}
+        foamTexture: {fileID: 0}
         foamColor: {r: 0.89, g: 0.88, b: 0.87, a: 1}
         foamTextureFadeDistance: 1000
         foamTiling: 2
@@ -96,12 +96,12 @@ MonoBehaviour:
         foamDecayRate: 1
         foamBias: -0.2
         foamAccumulationRate: 1
-    - rid: 8760515485916201244
-      type: {class: TerrainParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385753
+      type: {class: TerrainParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         useTerrainInfluence: 1
         heightmapOffset: 3
-        waveDisplacementFade: 40
+        waveDisplacementFade: 100
         shoreWaveCount: 5
         shoreWaveStartDepth: 8
         shoreWaveFalloff: 0.4
@@ -111,14 +111,14 @@ MonoBehaviour:
         shoreWaveNoiseScale: 3
         shoreWaveNormalStrength: 0.5
         directionalInfluenceMultiplier: 0.5
-    - rid: 8760515485916201245
-      type: {class: ScreenParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385754
+      type: {class: ScreenParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
-        screenWaterNoiseTexture: {fileID: 2800000, guid: c9cffcf4147442f4394f72ea9228744c, type: 3}
+        screenWaterNoiseTexture: {fileID: 0}
         screenWaterTiling: 0.2
-        screenWaterFadeSpeed: 1.3
-    - rid: 8760515485916201246
-      type: {class: CausticParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+        screenWaterFadeSpeed: 800
+    - rid: 3806890994986385755
+      type: {class: CausticParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         causticStrength: 0.08
         causticTiling: 0.8
@@ -126,25 +126,25 @@ MonoBehaviour:
         causticDefinition: 10
         causticFadeDepth: 400
         causticAboveWaterFadeDistance: 20
-    - rid: 8760515485916201247
-      type: {class: UnderwaterParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385756
+      type: {class: UnderwaterParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
-        underwaterFogColor: {r: 0.6179246, g: 0.80317324, b: 1, a: 1}
+        underwaterFogColor: {r: 0.6179246, g: 0.8031732, b: 1, a: 1}
         underwaterFogFadeDistance: 150
-        underwaterSurfaceEmissionStrength: 20
-        lightRayShadowMultiplier: 0.6
+        underwaterSurfaceEmissionStrength: 30
+        lightRayShadowMultiplier: 0.5
         lightRayTiling: 1
-        lightRayDefinition: 1.5
+        lightRayDefinition: 1.25
         lightRayFadeInDistance: 1
-        maxSliceDepth: 100
+        maxSliceDepth: 80
         minSliceDepth: 1
-    - rid: 8760515485916201248
-      type: {class: MeshParamsUser, ns: GOcean, asm: Cheddabunny.GOcean}
+    - rid: 3806890994986385757
+      type: {class: MeshParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         chunkSize: 90
         chunkGridResolution: 30
         maxTessellation: 6
-        tessellationFalloff: 0.7
+        tessellationFalloff: 0.8
         tessellationOffset: 0
         cullPadding: 0
         displacementFalloff: 3
