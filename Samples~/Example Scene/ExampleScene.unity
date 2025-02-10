@@ -449,14 +449,14 @@ MonoBehaviour:
   fadeRadius: 0
   priority: 0
   customPasses:
-  - rid: 3806890994986385767
+  - rid: 3806890996874608642
   injectionPoint: 2
   m_TargetCamera: {fileID: 0}
   useTargetCamera: 0
   references:
     version: 2
     RefIds:
-    - rid: 3806890994986385767
+    - rid: 3806890996874608642
       type: {class: BeforePostProcessCustomPass, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         m_Name: GOceanBeforePostProcess
@@ -483,14 +483,14 @@ MonoBehaviour:
   fadeRadius: 0
   priority: 0
   customPasses:
-  - rid: 3806890994986385766
+  - rid: 3806890996874608641
   injectionPoint: 4
   m_TargetCamera: {fileID: 0}
   useTargetCamera: 0
   references:
     version: 2
     RefIds:
-    - rid: 3806890994986385766
+    - rid: 3806890996874608641
       type: {class: BeforePreRefractionCustomPass, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         m_Name: GOceanBeforePreRefraction
@@ -517,14 +517,14 @@ MonoBehaviour:
   fadeRadius: 0
   priority: 0
   customPasses:
-  - rid: 3806890994986385765
+  - rid: 3806890996874608640
   injectionPoint: 0
   m_TargetCamera: {fileID: 0}
   useTargetCamera: 0
   references:
     version: 2
     RefIds:
-    - rid: 3806890994986385765
+    - rid: 3806890996874608640
       type: {class: BeforeRenderingCustomPass, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         m_Name: GOceanBeforeRendering

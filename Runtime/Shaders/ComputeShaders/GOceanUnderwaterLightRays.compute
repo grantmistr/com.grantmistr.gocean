@@ -91,7 +91,7 @@ void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inou
     
     float flowMask = _ScreenWaterNoiseTexture.SampleLevel(sampler_Linear_Repeat, uvScreen, 0.0).x;
     
-    screenWater = saturate(flowMask - currFrameTime01);
+    screenWater = saturate(flowMask - sqrt(currFrameTime01));
     
     return;
 }

@@ -202,13 +202,13 @@ Shader "GOcean/Fullscreen"
 
     float2 GetScreenWaterDisplacement(float2 coord, Texture2D<float2> t, float2 temporaryBlurTextureSample)
     {
-        float offsetX = min(coord.x + 4.0, _ScreenSize.x - 1.0);
-        float offsetY = min(coord.y + 4.0, _ScreenSize.y - 1.0);
+        float offsetX = min(coord.x + 1.0, _ScreenSize.x - 1.0);
+        float offsetY = min(coord.y + 1.0, _ScreenSize.y - 1.0);
     
         float s0 = t[uint2(offsetX, coord.y)].y;
         float s1 = t[uint2(coord.x, offsetY)].y;
 
-        return float2(temporaryBlurTextureSample.y - s0, temporaryBlurTextureSample.y - s1) * -600.0;
+        return float2(temporaryBlurTextureSample.y - s0, temporaryBlurTextureSample.y - s1) * -4000.0;
     }
 
     float4 UnderwaterTint(Varyings varyings

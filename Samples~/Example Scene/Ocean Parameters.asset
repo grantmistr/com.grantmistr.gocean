@@ -114,7 +114,7 @@ MonoBehaviour:
     - rid: 3806890994986385754
       type: {class: ScreenParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
-        screenWaterNoiseTexture: {fileID: 0}
+        screenWaterNoiseTexture: {fileID: 2800000, guid: c9cffcf4147442f4394f72ea9228744c, type: 3}
         screenWaterTiling: 0.2
         screenWaterFadeSpeed: 800
     - rid: 3806890994986385755
