@@ -19,6 +19,13 @@ GOcean is an infinite ocean rendering system for Unity HDRP.
 2. Modify the existing user parameters, or create a new one from *'Assets/Create/GOcean/Ocean Parameters'*, and assign it to the `parametersUser` field.
 3. Add the `TerrainData.cs` component to any terrains that should interact with the ocean.
 
+**Important notes when using terrain system**
+- Terrains originate from origin, meaning one terrains pivot is at (0, 0, 0), and the horizontal offsets for other terrains are in steps of the terrain size
+- No vertical offset of game object terrain component is attached to
+- Terrains are all square (equal length and width)
+- Terrains all have the same length, width, and height
+- Terrains all have the same heightmap resolution
+
 The Ocean can also be created from script. Only one Ocean instance can be in a scene at a time. Access this instance using `Ocean.Instance`.
 
 You can query the ocean height and normal at an XZ position by adding an `OceanSampler` object to the static `Ocean.OceanSamplers` list.

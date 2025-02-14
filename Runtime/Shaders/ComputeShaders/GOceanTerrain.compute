@@ -278,10 +278,11 @@ void DirectionalInfluence(uint3 id : SV_DispatchThreadID)
     uint sliceWS = _TargetSliceIndicesBuffer[sliceLookup + TERRAIN_HEIGHTMAP_ARRAY_SLICES];
     uint2 slice2D = slice2DLookupArray[slice];
     uint2 slice2DWS = GetTerrainLookup2DIndex(sliceWS, _TerrainLookupResolution);
-    float2 uv = (float2) slice2DWS + float2(0.5, 0.5);
+    
+    float2 uvWS = (float2(0.5, 0.5) + (float2) slice2DWS) * _TerrainSize.xz + _TerrainPosScaledBounds.xz * _TerrainSize.xz;
     
     float4 directionalInfluence = _DirectionalInfluenceBuffer[slice * _ShoreWaveCount + shoreWave];
-    float waveProgress = GetWaveProgress(shoreWave, GetDirectionalInfluence(directionalInfluence.xy, uv));
+    float waveProgress = GetWaveProgress(shoreWave, GetDirectionalInfluence(directionalInfluence.xy, uvWS));
     
     if (waveProgress < 2.0)
     {
@@ -294,7 +295,7 @@ void DirectionalInfluence(uint3 id : SV_DispatchThreadID)
     
     if (directionalInfluence.w < 1.0)
     {
-        float newWaveProgress = GetWaveProgress(shoreWave, GetDirectionalInfluence(_DirectionalInfluence, uv));
+        float newWaveProgress = GetWaveProgress(shoreWave, GetDirectionalInfluence(_DirectionalInfluence, uvWS));
         if (newWaveProgress > 2.0)
         {
             _DirectionalInfluenceBuffer[slice * _ShoreWaveCount + shoreWave] = float4(_DirectionalInfluence, 1.0, 1.0);
@@ -340,7 +341,7 @@ void ComputeShoreWaves(uint3 id : SV_DispatchThreadID, uint3 groupThreadID : SV_
     
     if (shoreWaveHeightmapFalloff != 1.0)
     {
-        float4 noiseTextureSample = _RandomNoiseTexture.SampleLevel(sampler_Linear_Repeat, uvSliceWS * _ShoreWaveNoiseScale, 0.0) * _ShoreWaveNoiseStrength;
+        float4 noiseTextureSample = _RandomNoiseTexture.SampleLevel(sampler_Linear_Repeat, uvWS * _ShoreWaveNoiseScale, 0.0) * _ShoreWaveNoiseStrength;
         float2 waveDirection = CalculateWaveDirection(tID, _TerrainHeightmapResolution, terrainHeightmapSample);
         
         // this has potential but still needs work
@@ -354,7 +355,7 @@ void ComputeShoreWaves(uint3 id : SV_DispatchThreadID, uint3 groupThreadID : SV_
             
             if (directionalInfluence.w > 0.0)
             {
-                float directionalInfluencePerWave = GetDirectionalInfluence(directionalInfluence.xy, uvSliceWS) + noiseTextureSample[wave % 4];
+                float directionalInfluencePerWave = GetDirectionalInfluence(directionalInfluence.xy, uvWS) + noiseTextureSample[wave % 4];
             
                 float waveHeight, waveMask, waveFoam;
                 float2 waveNormal;

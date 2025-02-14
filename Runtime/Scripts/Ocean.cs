@@ -238,10 +238,13 @@ namespace GOcean
             IsInitialized = true;
 
 #if UNITY_EDITOR
-            if (firstInit)
+            if (!Application.isPlaying)
             {
-                firstInit = false;
-                StartCoroutine(FirstInit());
+                if (firstInit)
+                {
+                    firstInit = false;
+                    StartCoroutine(FirstInit());
+                }
             }
 #endif
         }

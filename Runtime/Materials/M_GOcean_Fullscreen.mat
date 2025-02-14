@@ -266,7 +266,7 @@ Material:
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
     - _RefractionModel: 0
-    - _ScreenWaterFadeSpeed: 200
+    - _ScreenWaterFadeSpeed: 400
     - _ScreenWaterTiling: 0.2
     - _Smoothness: 0.9
     - _SmoothnessRemapMax: 1
@@ -329,6 +329,6 @@ Material:
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
     - _UnderwaterFogColor: {r: 0.6179246, g: 0.8031732, b: 1, a: 1}
-    - _WaterColor: {r: 0.3915094, g: 0.70573, b: 1, a: 1}
+    - _WaterColor: {r: 0.3915094, g: 0.70624596, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

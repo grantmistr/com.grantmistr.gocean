@@ -1,3 +1,4 @@
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
@@ -134,6 +135,14 @@ namespace GOcean
         {
             InitializeParams(ocean.parametersUser.terrain);
 
+            hasTerrain = useTerrainInfluence;
+
+            if (!hasTerrain)
+            {
+                ReleaseResources();
+                return;
+            }
+
             kernelIDs = new KernelIDs(ocean.TerrainCS);
             threadGroupSizes = new ThreadGroupSizes(ocean.TerrainCS, kernelIDs);
 
@@ -190,7 +199,7 @@ namespace GOcean
             shoreWaveNoiseStrength = u.shoreWaveNoiseStrength;
             shoreWaveNoiseScale = CalculateShoreWaveNoiseScale(u.shoreWaveNoiseScale);
             shoreWaveNormalStrength = u.shoreWaveNormalStrength;
-            directionalInfluenceMultiplier = u.directionalInfluenceMultiplier;
+            directionalInfluenceMultiplier = CalculateDirectionalInfluenceMultiplier(u.directionalInfluenceMultiplier);
         }
 
         public override void SetShaderParams()
@@ -363,6 +372,7 @@ namespace GOcean
         {
             if (!hasTerrain)
             {
+                ReleaseResources();
                 return;
             }
 
@@ -433,8 +443,6 @@ namespace GOcean
             }
 
             targetSliceIndicesBuffer.SetData(targetSliceIndices);
-
-            previousTerrainCoord = terrainCoord;
         }
 
         public UnityEngine.Terrain GetTerrainFromLookupCoord(Vector2Int coord)
@@ -652,7 +660,7 @@ namespace GOcean
                 return false;
             }
 
-            if (terrainArray == null || terrainArray.Length < 1 || terrainArray.Length != terrainData.Length)
+            //if (terrainArray == null || terrainArray.Length < 1 || terrainArray.Length != terrainData.Length)
             {
                 terrainArray = new UnityEngine.Terrain[terrainData.Length];
 
@@ -663,7 +671,41 @@ namespace GOcean
                     {
                         throw new System.Exception("TerrainData component does not have an associated UnityEngine.Terrain component.");
                     }
+
                     terrainArray[i] = terrain;
+                }
+
+                Vector3 terrainSize = terrainArray[0].terrainData.size;
+
+                if (terrainSize.x != terrainSize.z)
+                {
+                    Debug.LogWarning("Terrain length and width do not match.");
+                }
+
+                for (int i = 1; i < terrainArray.Length; i++)
+                {
+                    if (terrainArray[i].terrainData.size != terrainSize)
+                    {
+                        Debug.LogWarning($"The terrain {terrainArray[i]} has a different size from the baseline terrain {terrainArray[0]} used to initialize the ocean.");
+                    }
+                }
+
+                int heightmapResolution = terrainArray[0].terrainData.heightmapResolution;
+
+                for (int i = 1; i < terrainArray.Length; i++)
+                {
+                    if (terrainArray[i].terrainData.heightmapResolution != heightmapResolution)
+                    {
+                        Debug.LogWarning($"The terrain {terrainArray[i]} has a different heightmap resolution from the baseline terrain {terrainArray[0]} used to initialize the ocean.");
+                    }
+                }
+
+                for (int i = 0; i < terrainArray.Length; i++)
+                {
+                    if (terrainArray[i].GetPosition().y != 0f)
+                    {
+                        Debug.LogWarning($"The terrain {terrainArray[i]} has a non-zero vertical offset.");
+                    }
                 }
             }
 
@@ -854,6 +896,12 @@ namespace GOcean
         /// </summary>
         public void InitialArrayTextureFill()
         {
+            if (!hasTerrain)
+            {
+                ReleaseResources();
+                return;
+            }
+
             ocean.TerrainCS.SetTexture(kernelIDs.InitialFill, PropIDs.terrainHeightmapArrayTexture, terrainHeightmapArrayTexture);
             ocean.TerrainCS.SetTexture(kernelIDs.InitialFill, PropIDs.terrainShoreWaveArrayTexture, terrainShoreWaveArrayTexture);
             ocean.TerrainCS.SetInt(PropIDs.terrainHeightmapResolution, terrainHeightmapResolution);
@@ -934,6 +982,11 @@ namespace GOcean
         private float CalculateUVMultiplier(int terrainHeightmapResolution)
         {
             return 1f - (1f / (float)terrainHeightmapResolution);
+        }
+
+        private float CalculateDirectionalInfluenceMultiplier(float userDirectionalInfluenceMultiplier)
+        {
+            return userDirectionalInfluenceMultiplier * 0.01f;
         }
 
         private Vector4Int GetOffsetCoord(Vector3Int coord, Vector2Int offset, int res)

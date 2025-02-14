@@ -40,7 +40,7 @@ MonoBehaviour:
       data:
         waterWritesToDepth: 1
         randomSeed: 0
-        waterHeight: 100
+        waterHeight: 28.6
         diffusionProfile: {fileID: 11400000, guid: 0ff5f42b178590e47af75d21ee34a2bd, type: 2}
     - rid: 3806890946872738036
       type: {class: WindParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
