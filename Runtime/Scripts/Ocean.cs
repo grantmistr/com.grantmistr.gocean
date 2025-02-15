@@ -231,6 +231,7 @@ namespace GOcean
             InitializeRTHandleSystem();
             components.Initialize(this, rtHandleSystem, MCSArrays);
             constants.Initialize(components);
+            parametersUser.SetComponentReferences(components);
             SetShaderParams();
 
             customPasses.EnableVolumes();

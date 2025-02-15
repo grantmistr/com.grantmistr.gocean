@@ -199,16 +199,6 @@ namespace GOcean
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             SetManagedReferenceValueIfNull<MeshParamsUser>(property);
-
-            if (property.isExpanded)
-            {
-                if (GUILayout.Button("Print Mesh Chunks to Console"))
-                {
-                    MeshChunks.MeshChunkArray meshChunkArray = new MeshChunks.MeshChunkArray(true);
-                    Debug.Log(meshChunkArray.ToString());
-                }
-            }
-
             base.OnGUI(position, property, label);
         }
     }

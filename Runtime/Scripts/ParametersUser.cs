@@ -8,6 +8,7 @@ namespace GOcean
     public class ParametersUser : ScriptableObject
     {
         public const string RESOURCE_STRING = "GOcean_DefaultOceanParameters";
+        public const int NUM_COMPONENTS = 10;
 
         [SerializeReference]
         public GenericParamsUser generic = new GenericParamsUser();
@@ -30,6 +31,27 @@ namespace GOcean
         [SerializeReference]
         public MeshParamsUser mesh = new MeshParamsUser();
 
+        private BaseParamsUser this[int i]
+        {
+            get
+            {
+                return i switch
+                {
+                    0 => generic,
+                    1 => wind,
+                    2 => displacement,
+                    3 => surface,
+                    4 => foam,
+                    5 => terrain,
+                    6 => screen,
+                    7 => caustic,
+                    8 => underwater,
+                    9 => mesh,
+                    _ => throw new System.Exception("Invalid index.")
+                };
+            }
+        }
+
         private void OnEnable()
         {
             if (generic != null)
@@ -37,12 +59,42 @@ namespace GOcean
                 generic.SetDiffusionProfile();
             }
         }
+
+        public void SetComponentReferences(ComponentContainer components)
+        {
+            for (int i = 0; i < NUM_COMPONENTS; i++)
+            {
+                this[i].SetComponent(components[i]);
+            }
+        }
+
+        public void SetComponentsNull()
+        {
+            for (int i = 0; i < NUM_COMPONENTS; i++)
+            {
+                this[i].SetComponent(null);
+            }
+        }
     }
 
     [System.Serializable]
     public abstract class BaseParamsUser
     {
-        public abstract void Update(ComponentContainer components);
+        protected Component component;
+
+        public virtual void Update()
+        {
+            if (component != null)
+            {
+                component.Initialize();
+                component.SetShaderParams();
+            }
+        }
+
+        public void SetComponent(Component component)
+        {
+            this.component = component;
+        }
     }
 
     [System.Serializable]
@@ -55,14 +107,6 @@ namespace GOcean
         public int randomSeed = 0;
         public float waterHeight = 100f;
         public DiffusionProfileSettings diffusionProfile;
-
-        public override void Update(ComponentContainer components)
-        {
-            SetDiffusionProfile();
-
-            components.Generic.Initialize();
-            components.Generic.SetShaderParams();
-        }
 
         public void SetDiffusionProfile()
         {
@@ -98,12 +142,6 @@ namespace GOcean
         public float windSpeedMin = 3f;
         [Min(1f)]
         public float windSpeedMax = 100f;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Wind.Initialize();
-            components.Wind.SetShaderParams();
-        }
     }
 
     [System.Serializable]
@@ -134,12 +172,6 @@ namespace GOcean
         [Tooltip("High wave frequency cutoff. No waves simulated with a frequency above this value.")]
         [Min(0f)]
         public float highWaveCutoff = 100f;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Displacement.Initialize();
-            components.Displacement.SetShaderParams();
-        }
     }
 
     [System.Serializable]
@@ -163,12 +195,6 @@ namespace GOcean
         public Color scatteringColor = new Color(0.2520915f, 0.3896481f, 0.5188679f);
         [Min(1f)]
         public float scatteringFalloff = 5f;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Surface.Initialize();
-            components.Surface.SetShaderParams();
-        }
     }
 
     [System.Serializable]
@@ -202,12 +228,6 @@ namespace GOcean
         public float foamBias = -0.2f;
         [Min(0f)]
         public float foamAccumulationRate = 1f;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Foam.Initialize();
-            components.Foam.SetShaderParams();
-        }
     }
 
     [System.Serializable]
@@ -235,12 +255,6 @@ namespace GOcean
         [Tooltip("How much shore waves are influenced by wind.")]
         [Range(0f, 1f)]
         public float directionalInfluenceMultiplier = 0.5f;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Terrain.Initialize();
-            components.Terrain.SetShaderParams();
-        }
     }
 
     [System.Serializable]
@@ -251,12 +265,6 @@ namespace GOcean
         public float screenWaterTiling = 0.2f;
         [Min(0f)]
         public float screenWaterFadeSpeed = 800f;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Screen.Initialize();
-            components.Screen.SetShaderParams();
-        }
     }
 
     [System.Serializable]
@@ -275,12 +283,6 @@ namespace GOcean
         [Tooltip("Distance at which caustics will fade out above the water.")]
         [Min(1f)]
         public float causticAboveWaterFadeDistance = 20f;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Caustic.Initialize();
-            components.Caustic.SetShaderParams();
-        }
     }
 
     [System.Serializable]
@@ -304,12 +306,6 @@ namespace GOcean
         public float maxSliceDepth = 80f;
         [Min(0.01f)]
         public float minSliceDepth = 1f;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Underwater.Initialize();
-            components.Underwater.SetShaderParams();
-        }
     }
 
     [System.Serializable]
@@ -332,11 +328,5 @@ namespace GOcean
         public float displacementFalloff = 3f;
         [Tooltip("Won't show up in build.")]
         public bool drawWireframe = false;
-
-        public override void Update(ComponentContainer components)
-        {
-            components.Mesh.Initialize();
-            components.Mesh.SetShaderParams();
-        }
     }
 }

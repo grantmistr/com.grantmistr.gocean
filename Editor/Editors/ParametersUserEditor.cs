@@ -6,7 +6,6 @@ namespace GOcean
     public class ParametersUserEditor : Editor
     {
         private Ocean ocean;
-        private ComponentContainer components;
 
         public override void OnInspectorGUI()
         {
@@ -25,7 +24,7 @@ namespace GOcean
                     if (ocean != null && ocean.IsInitialized)
                     {
                         EditorUtility.SetDirty(ocean);
-                        p.Update(components);
+                        p.Update();
                         ocean.UpdateOnDemandDataBuffer();
                         ocean.UpdateConstantDataBuffer();
                     }
@@ -36,11 +35,6 @@ namespace GOcean
         public void SetOcean(Ocean ocean)
         {
             this.ocean = ocean;
-        }
-
-        public void SetComponents(ComponentContainer components)
-        {
-            this.components = components;
         }
 
         private void DefaultLayout(SerializedProperty property)

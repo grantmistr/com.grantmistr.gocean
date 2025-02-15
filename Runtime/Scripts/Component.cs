@@ -62,6 +62,14 @@ namespace GOcean
         public Mesh Mesh                    { get { return components[9] as Mesh; } }
         public Physics Physics              { get { return components[10] as Physics; } }
 
+        public Component this[int i]
+        {
+            get
+            {
+                return components[i];
+            }
+        }
+
         public void Initialize()
         {
             foreach (Component component in components)

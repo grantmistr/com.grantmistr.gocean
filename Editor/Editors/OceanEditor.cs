@@ -6,12 +6,10 @@ namespace GOcean
     [CustomEditor(typeof(Ocean))]
     public class OceanEditor : Editor
     {
-        private SerializedProperty
-            parametersUser,
-            components;
-
+        private SerializedProperty parametersUser;
         private Editor parametersUserEditor;
         private Ocean ocean;
+        private ComponentContainer components;
 
         private void OnEnable()
         {
@@ -42,7 +40,6 @@ namespace GOcean
             {
                 CreateCachedEditor(parametersUser.objectReferenceValue, typeof(ParametersUserEditor), ref parametersUserEditor);
                 (parametersUserEditor as ParametersUserEditor).SetOcean(ocean);
-                (parametersUserEditor as ParametersUserEditor).SetComponents(components.managedReferenceValue as ComponentContainer);
                 parametersUserEditor.OnInspectorGUI();
             }
 
@@ -57,12 +54,30 @@ namespace GOcean
                 EditorUtility.SetDirty(ocean);
                 ocean.ReInitialize();
             }
+
+            GUILayout.Space(14f);
+
+            if (GUILayout.Button("Add TerrainData to all Terrains"))
+            {
+                components.Terrain.AddTerrainDataToAllTerrains();
+            }
+
+            if (GUILayout.Button("Remove TerrainData from all Terrains"))
+            {
+                components.Terrain.RemoveTerrainDataFromAllTerrains();
+            }
+
+            if (GUILayout.Button("Print Mesh Chunks to Console"))
+            {
+                MeshChunks.MeshChunkArray meshChunkArray = new MeshChunks.MeshChunkArray(true);
+                Debug.Log(meshChunkArray.ToString());
+            }
         }
 
         private void UpdatePropertyRefs()
         {
             parametersUser  = serializedObject.FindProperty("parametersUser");
-            components      = serializedObject.FindProperty("components");
+            components      = serializedObject.FindProperty("components").managedReferenceValue as ComponentContainer;
         }
 
         private void OnUndoRedoPerformed()

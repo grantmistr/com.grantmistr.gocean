@@ -370,6 +370,8 @@ namespace GOcean
 
         public void FirstUpdateTerrainTextureArray()
         {
+            previousTerrainCoord = new Vector2Int(int.MaxValue, int.MaxValue);
+
             if (!hasTerrain)
             {
                 ReleaseResources();
@@ -710,6 +712,38 @@ namespace GOcean
             }
 
             return true;
+        }
+
+        public void AddTerrainDataToAllTerrains()
+        {
+            UnityEngine.Terrain[] terrains = Object.FindObjectsByType<UnityEngine.Terrain>(FindObjectsSortMode.None);
+
+            foreach (UnityEngine.Terrain terrain in terrains)
+            {
+                if (!terrain.TryGetComponent<TerrainData>(out _))
+                {
+                    terrain.gameObject.AddComponent<TerrainData>();
+                }
+            }
+
+            Initialize();
+            SetShaderParams();
+        }
+
+        public void RemoveTerrainDataFromAllTerrains()
+        {
+            UnityEngine.Terrain[] terrains = Object.FindObjectsByType<UnityEngine.Terrain>(FindObjectsSortMode.None);
+
+            foreach (UnityEngine.Terrain terrain in terrains)
+            {
+                if (terrain.TryGetComponent<TerrainData>(out TerrainData terrainData))
+                {
+                    SmartDestroy(terrainData);
+                }
+            }
+
+            Initialize();
+            SetShaderParams();
         }
 
         /// <summary>
