@@ -75,8 +75,8 @@ MonoBehaviour:
         distantSmoothness: 0.7
         smoothnessTransitionDistance: 2000
         refractionStrength: 5
-        waterColor: {r: 0.3915094, g: 0.70573, b: 1, a: 1}
-        scatteringColor: {r: 0.2520915, g: 0.3896481, b: 0.5188679, a: 1}
+        waterColor: {r: 0.39215684, g: 0.7349644, b: 1, a: 1}
+        scatteringColor: {r: 0.2509804, g: 0.40825796, b: 0.5176471, a: 1}
         scatteringFalloff: 5
     - rid: 3806890946872738039
       type: {class: FoamParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
@@ -129,7 +129,7 @@ MonoBehaviour:
     - rid: 3806890946872738043
       type: {class: UnderwaterParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
-        underwaterFogColor: {r: 0.6179246, g: 0.8031732, b: 1, a: 1}
+        underwaterFogColor: {r: 0.61960787, g: 0.84697735, b: 1, a: 1}
         underwaterFogFadeDistance: 150
         underwaterSurfaceEmissionStrength: 30
         lightRayShadowMultiplier: 0.5

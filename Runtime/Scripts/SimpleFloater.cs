@@ -9,7 +9,11 @@ namespace GOcean
 
         private void OnEnable()
         {
-            sampler = new OceanSampler(this.transform.position);
+            if (sampler == null)
+            {
+                sampler = new OceanSampler(this.transform.position);
+            }
+
             Ocean.OceanSamplers.Add(sampler);
         }
 

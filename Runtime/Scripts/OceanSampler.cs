@@ -15,6 +15,7 @@ namespace GOcean
         public Vector3 normal;
     }
 
+    [System.Serializable]
     public class OceanSampler
     {
         /// <summary>
@@ -35,7 +36,17 @@ namespace GOcean
 
         /// <summary>
         /// Add and remove this object from the static list of OceanSamplers in GOcean.Ocean,
-        /// ususally using Monobehavior OnEnable and OnDisable methods.
+        /// usually using Monobehavior OnEnable and OnDisable methods.
+        /// </summary>
+        public OceanSampler()
+        {
+            this.position = Vector3.zero;
+            this.iterations = Physics.HEIGHT_SAMPLE_ITERATIONS;
+        }
+
+        /// <summary>
+        /// Add and remove this object from the static list of OceanSamplers in GOcean.Ocean,
+        /// usually using Monobehavior OnEnable and OnDisable methods.
         /// </summary>
         /// <param name="position"></param>
         /// <param name="iterations"></param>
