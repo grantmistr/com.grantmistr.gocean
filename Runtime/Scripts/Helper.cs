@@ -833,5 +833,10 @@ namespace GOcean
                 yield return null;
             }
         }
+
+        public static Vector3 Multiply(this Vector3 vector, Vector3 v)
+        {
+            return new Vector3(vector.x * v.x, vector.y * v.y, vector.z * v.z);
+        }
     }
 }

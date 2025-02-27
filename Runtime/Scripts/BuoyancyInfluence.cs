@@ -40,15 +40,24 @@ namespace GOcean
             this.force = force;
         }
 
+        public float GetRadius()
+        {
+            return radius;
+        }
+
         public void SetRadius(float radius)
         {
             this.radius = radius;
         }
 
-        public void SetLocalPosition(Vector3 position, Matrix4x4 localToWorldMatrix)
+        public Vector3 GetLocalPosition()
+        {
+            return localPosition;
+        }
+
+        public void SetLocalPosition(Vector3 position)
         {
             localPosition = position;
-            UpdateWorldPosition(localToWorldMatrix);
         }
 
         public void UpdateWorldPosition(Matrix4x4 localToWorldMatrix)
@@ -56,11 +65,15 @@ namespace GOcean
             oceanSampler.position = localToWorldMatrix.MultiplyPoint(localPosition);
         }
 
-        public void ApplyForce(Rigidbody rigidbody)
+        public float ApplyForce(Rigidbody rigidbody)
         {
-            float f = (oceanSampler.outputData.height - (oceanSampler.position.y - radius)) / (2f * radius) / rigidbody.mass * force * Time.deltaTime;
-            f = Mathf.Max(f, 0f);
-            rigidbody.AddForceAtPosition(oceanSampler.outputData.normal * f, oceanSampler.position);
+            float submergedPercentage = Mathf.Clamp01((oceanSampler.outputData.height - (oceanSampler.position.y - radius)) / (2f * radius));
+            float submergedVolume = submergedPercentage * (4f * Mathf.PI * radius * radius);
+            Vector3 buoyantForce = submergedVolume * force * Time.deltaTime * UnityEngine.Physics.gravity.magnitude * oceanSampler.outputData.normal;
+            
+            rigidbody.AddForceAtPosition(buoyantForce, oceanSampler.position);
+
+            return submergedPercentage;
         }
 
         public Vector3 GetWorldPosition()

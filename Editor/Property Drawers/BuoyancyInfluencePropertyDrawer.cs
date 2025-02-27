@@ -6,12 +6,17 @@ namespace GOcean
     [CustomPropertyDrawer(typeof(BuoyancyInfluence))]
     public class BuoyancyInfluencePropertyDrawer : PropertyDrawer
     {
-        public const float PROPERTY_HEIGHT = 19f, PADDING_HEIGHT = 4f;
+        public const float PROPERTY_HEIGHT = 20f, PADDING_HEIGHT = 3f;
         public const float OFFSET_STEP = PROPERTY_HEIGHT + PADDING_HEIGHT;
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            return OFFSET_STEP * 4f + PADDING_HEIGHT;
+            SerializedProperty iterations = property.FindPropertyRelative("oceanSampler").FindPropertyRelative("iterations");
+            SerializedProperty force = property.FindPropertyRelative("force");
+            SerializedProperty radius = property.FindPropertyRelative("radius");
+            SerializedProperty localPosition = property.FindPropertyRelative("localPosition");
+
+            return EditorGUI.GetPropertyHeight(iterations) + EditorGUI.GetPropertyHeight(force) + EditorGUI.GetPropertyHeight(radius) + EditorGUI.GetPropertyHeight(localPosition) + EditorGUIUtility.singleLineHeight;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -21,23 +26,26 @@ namespace GOcean
             SerializedProperty radius = property.FindPropertyRelative("radius");
             SerializedProperty localPosition = property.FindPropertyRelative("localPosition");
 
-            position.height = PROPERTY_HEIGHT;
             position.y += PADDING_HEIGHT;
 
             // Iterations
+            position.height = EditorGUI.GetPropertyHeight(iterations);
             EditorGUI.PropertyField(position, iterations);
-            position.y += OFFSET_STEP;
 
             // Force
+            position.y += EditorGUIUtility.singleLineHeight + PADDING_HEIGHT;
+            position.height = EditorGUI.GetPropertyHeight(force);
             EditorGUI.PropertyField(position, force);
-            position.y += OFFSET_STEP;
 
             // Radius
-            property.floatValue = Mathf.Max(property.floatValue, 0f);
+            position.y += EditorGUIUtility.singleLineHeight + PADDING_HEIGHT;
+            position.height = EditorGUI.GetPropertyHeight(radius);
+            radius.floatValue = Mathf.Max(radius.floatValue, 0f);
             EditorGUI.PropertyField(position, radius);
-            position.y += OFFSET_STEP;
 
             // Local Position
+            position.y += EditorGUIUtility.singleLineHeight + PADDING_HEIGHT;
+            position.height = EditorGUI.GetPropertyHeight(localPosition);
             EditorGUI.PropertyField(position, localPosition);
         }
     }
