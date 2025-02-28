@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -9,14 +11,18 @@ namespace GOcean
     public class FloaterEditor : Editor
     {
         private const string EDITOR_PREFS_STRING_KEY = "GOCEAN_FLOATER_EDITOR_";
+        private static Color UNSELECTED_COLOR = new Color(0.1f, 0.5f, 0.7f, 0.2f);
+        private static Color SELECTED_COLOR = new Color(0.7f, 0.2f, 0.1f, 0.8f);
 
+        private Floater floater;
         private SerializedProperty buoyancyInfluences;
         private ReorderableList buoyancyInfluencesList;
-        private Floater floater;
         private bool prevToolHiddenState;
         private uint iterations;
         private float force;
         private float radius;
+
+        private List<int> selectedBuoyancyInfluences = new List<int>();
 
         private void OnEnable()
         {
@@ -26,6 +32,8 @@ namespace GOcean
             LoadData();
             SetupBuoyancyInfluencesList();
 
+            Selection.selectionChanged += OnSelectionChanged;
+
             prevToolHiddenState = Tools.hidden;
         }
 
@@ -33,6 +41,8 @@ namespace GOcean
         {
             SaveData();
             CleanupBuoyancyInfluencesList();
+
+            Selection.selectionChanged -= OnSelectionChanged;
 
             Tools.hidden = prevToolHiddenState;
         }
@@ -58,6 +68,11 @@ namespace GOcean
 
         private void SetupBuoyancyInfluencesList()
         {
+            if (targets.Length != 1)
+            {
+                return;
+            }
+
             if (buoyancyInfluencesList == null)
             {
                 buoyancyInfluencesList = new ReorderableList(serializedObject, buoyancyInfluences);
@@ -66,13 +81,45 @@ namespace GOcean
             buoyancyInfluencesList.drawElementCallback += DrawBuoyancyInfluencesListElement;
             buoyancyInfluencesList.elementHeightCallback += GetDrawBuoyancyInfluencesListElementHeight;
             buoyancyInfluencesList.drawHeaderCallback += DrawBuoyancyInfluencesListHeader;
+            buoyancyInfluencesList.onSelectCallback += OnBuoyancyInfluencesListSelect;
         }
 
         private void CleanupBuoyancyInfluencesList()
         {
+            if (targets.Length != 1)
+            {
+                return;
+            }
+
             buoyancyInfluencesList.drawElementCallback -= DrawBuoyancyInfluencesListElement;
             buoyancyInfluencesList.elementHeightCallback -= GetDrawBuoyancyInfluencesListElementHeight;
             buoyancyInfluencesList.drawHeaderCallback -= DrawBuoyancyInfluencesListHeader;
+        }
+
+        private void OnSelectionChanged()
+        {
+            selectedBuoyancyInfluences.Clear();
+        }
+
+        private void DrawBuoyancyInfluencesListHeader(Rect rect)
+        {
+            EditorGUI.LabelField(rect, "Buoyancy Influences");
+        }
+
+        private float GetDrawBuoyancyInfluencesListElementHeight(int index)
+        {
+            SerializedProperty property = buoyancyInfluencesList.serializedProperty.GetArrayElementAtIndex(index);
+            return EditorGUI.GetPropertyHeight(property);
+        }
+
+        private void DrawBuoyancyInfluencesListElement(Rect rect, int index, bool isActive, bool isFocused)
+        {
+            SerializedProperty property = buoyancyInfluencesList.serializedProperty.GetArrayElementAtIndex(index);
+            EditorGUI.PropertyField(rect, property);
+        }
+
+        private void OnBuoyancyInfluencesListSelect(ReorderableList list)
+        {
         }
 
         public override void OnInspectorGUI()
@@ -116,7 +163,7 @@ namespace GOcean
                 }
             }
 
-            if (targets.Length < 2)
+            if (targets.Length == 1)
             {
                 buoyancyInfluencesList.DoLayoutList();
             }
@@ -124,22 +171,160 @@ namespace GOcean
             serializedObject.ApplyModifiedProperties();
         }
 
+        /// <param name="floater"></param>
+        /// <param name="floaterTransform"></param>
+        /// <param name="selectedBuoyancyInfluences"></param>
+        /// <returns>
+        /// True if any buoyancy influences on this floater are selected.
+        /// </returns>
+        public bool DrawBuoyancyInfluences(Floater floater, Transform floaterTransform, List<int> selectedBuoyancyInfluences, bool anyBuoyancyInfluenceSelected, bool singleObjectSelected)
+        {
+            for (int i = 0; i < floater.buoyancyInfluences.Length; i++)
+            {
+                BuoyancyInfluence bInfluence = floater.buoyancyInfluences[i];
+
+                Vector3 worldPosition = floaterTransform.localToWorldMatrix.MultiplyPoint(bInfluence.GetLocalPosition());
+                float radius = bInfluence.GetRadius();
+                float diameter = radius * 2f;
+
+                bool isSelected = selectedBuoyancyInfluences.Contains(i);
+
+                if (isSelected)
+                {
+                    Handles.color = SELECTED_COLOR;
+                }
+                else
+                {
+                    Handles.color = UNSELECTED_COLOR;
+                }
+
+                // add / remove buoyancy influences to / from selected influences list
+                if (Handles.Button(worldPosition, Quaternion.identity, diameter, radius, Handles.SphereHandleCap))
+                {
+                    if (!Event.current.shift)
+                    {
+                        selectedBuoyancyInfluences.Clear();
+                        selectedBuoyancyInfluences.Add(i);
+
+                        if (singleObjectSelected)
+                        {
+                            buoyancyInfluencesList.ClearSelection();
+                            buoyancyInfluencesList.Select(i);
+                            Repaint();
+                        }
+
+                        return true;
+                    }
+                    else
+                    {
+                        if (isSelected)
+                        {
+                            selectedBuoyancyInfluences.Remove(i);
+
+                            if (singleObjectSelected)
+                            {
+                                buoyancyInfluencesList.Deselect(i);
+                                Repaint();
+                            }
+
+                            return selectedBuoyancyInfluences.Count > 0;
+                        }
+                        else
+                        {
+                            selectedBuoyancyInfluences.Add(i);
+
+                            if (singleObjectSelected)
+                            {
+                                buoyancyInfluencesList.Select(i, true);
+                                Repaint();
+                            }
+
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return anyBuoyancyInfluenceSelected;
+        }
+
+        private void DrawTransformHandlesAndUpdateValues(Floater floater, Transform floaterTransform, bool anyBuoyancyInfluenceSelected)
+        {
+            if (!anyBuoyancyInfluenceSelected)
+            {
+                return;
+            }
+
+            BuoyancyInfluence bInfluence = floater.buoyancyInfluences[selectedBuoyancyInfluences[selectedBuoyancyInfluences.Count - 1]];
+            Vector3 localPosition = bInfluence.GetLocalPosition();
+            Vector3 worldPosition = floaterTransform.localToWorldMatrix.MultiplyPoint(localPosition);
+            float radius = bInfluence.GetRadius();
+
+            switch (Tools.current)
+            {
+                case Tool.Move:
+                    Vector3 newPosition = Handles.PositionHandle(worldPosition, floaterTransform.rotation);
+                    if (newPosition != worldPosition)
+                    {
+                        Undo.RecordObject(target, "Move Buoyancy Object");
+                        Vector3 newLocalPosition = floaterTransform.worldToLocalMatrix.MultiplyPoint(newPosition);
+                        Vector3 localPositionDelta = newLocalPosition - localPosition;
+
+                        foreach (int i in selectedBuoyancyInfluences)
+                        {
+                            BuoyancyInfluence b = floater.buoyancyInfluences[i];
+                            Vector3 v = b.GetLocalPosition() + localPositionDelta;
+                            b.SetLocalPosition(v);
+                            b.UpdateWorldPosition(floaterTransform.localToWorldMatrix);
+                        }
+                    }
+                    break;
+                case Tool.Scale:
+                    Handles.color = Handles.centerColor;
+                    float newRadius = Handles.ScaleValueHandle(radius, worldPosition, floaterTransform.rotation, HandleUtility.GetHandleSize(worldPosition), Handles.CubeHandleCap, 0f);
+                    if (newRadius != radius)
+                    {
+                        Undo.RecordObject(target, "Scale Buoyancy Object");
+                        bInfluence.SetRadius(Mathf.Max(newRadius, 0f));
+
+                        foreach (int i in selectedBuoyancyInfluences)
+                        {
+                            BuoyancyInfluence b = floater.buoyancyInfluences[i];
+                            b.SetRadius(newRadius);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
         private void OnSceneGUI()
         {
+            Floater floater = target as Floater;
+            Transform floaterTransform = floater.transform;
+
+            bool isActiveObject = Selection.activeGameObject == floater.gameObject;
+            
+            if (!isActiveObject)
+            {
+                return;
+            }
+
             bool mouseUp = Event.current.type == EventType.MouseUp;
             bool mouseDrag = Event.current.type == EventType.MouseDrag;
             bool mouseButtonLeft = Event.current.button == 0;
-            bool buoyancyObjectIsSelected = buoyancyInfluencesList.selectedIndices.Count > 0;
+            bool anyBuoyancyInfluenceSelected = selectedBuoyancyInfluences.Count > 0;
 
-            //SerializedObject[] targetObjects = targets.Select(t => new SerializedObject(t)).ToArray();
+            // whenever a single floater object is selected, update the editor GUI selection
+            bool singleObjectSelected = Selection.count == 1;
 
-            Color prevColor = Handles.color;
-
-            if (buoyancyObjectIsSelected)
+            if (anyBuoyancyInfluenceSelected)
             {
-                // this makes 'clicking off' of a buoyancy influence object first select the floater game object
+                // this makes 'clicking off' of a buoyancy influence first select the floater object it is attached to
                 HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
 
+                // hide the floater move / scale tools while buoyancy influence is selected
                 Tools.hidden = true;
             }
             else
@@ -147,143 +332,22 @@ namespace GOcean
                 Tools.hidden = false;
             }
 
-            // buoyancy object de-selection
-            if (mouseUp && mouseButtonLeft && buoyancyObjectIsSelected && GUIUtility.hotControl == 0)
+            // buoyancy influence de-selection; need to do this since called AddDefaultControl above
+            if (mouseUp && mouseButtonLeft && anyBuoyancyInfluenceSelected && GUIUtility.hotControl == 0)
             {
-                buoyancyInfluencesList.ClearSelection();
-                buoyancyObjectIsSelected = false;
-                this.Repaint();
-            }
+                selectedBuoyancyInfluences.Clear();
+                anyBuoyancyInfluenceSelected = false;
 
-            // draw non-selected buoyancy objects
-            Handles.color = new Color(0.1f, 0.5f, 0.7f, 0.5f);
-            for (int i = 0; i < buoyancyInfluencesList.count; i++)
-            {
-                // skip selected buoyancy object
-                if (buoyancyObjectIsSelected)
+                if (singleObjectSelected)
                 {
-                    if (buoyancyInfluencesList.selectedIndices[0] == i)
-                    {
-                        continue;
-                    }
-                }
-
-                BuoyancyInfluence bInfluence = floater.buoyancyInfluences[i];
-                Vector3 worldPosition = floater.transform.localToWorldMatrix.MultiplyPoint(bInfluence.GetLocalPosition());
-                float radius = bInfluence.GetRadius();
-                float diameter = radius * 2f;
-
-                // select new buoyancy object if it was clicked on
-                if (Handles.Button(worldPosition, Quaternion.identity, diameter, radius, Handles.SphereHandleCap))
-                {
-                    buoyancyInfluencesList.Select(i);
-                    this.Repaint();
+                    buoyancyInfluencesList.ClearSelection();
+                    Repaint();
                 }
             }
 
-            // if a buoyancy object is selected, do some stuff to it:
-            //      change color
-            //      draw scale / move handle
-            if (buoyancyObjectIsSelected)
-            {
-                BuoyancyInfluence bInfluence = floater.buoyancyInfluences[buoyancyInfluencesList.selectedIndices[0]];
-                Vector3 worldPosition = floater.transform.localToWorldMatrix.MultiplyPoint(bInfluence.GetLocalPosition());
-                float radius = bInfluence.GetRadius();
-                float diameter = radius * 2f;
+            anyBuoyancyInfluenceSelected = DrawBuoyancyInfluences(floater, floaterTransform, selectedBuoyancyInfluences, anyBuoyancyInfluenceSelected, singleObjectSelected);
 
-                switch (Tools.current)
-                {
-                    case Tool.Move:
-                        Vector3 newPosition = Handles.PositionHandle(worldPosition, floater.transform.rotation);
-                        if (newPosition != worldPosition)
-                        {
-                            Undo.RecordObject(target, "Move Buoyancy Object");
-                            Vector3 localPosition = floater.transform.worldToLocalMatrix.MultiplyPoint(newPosition);
-                            bInfluence.SetLocalPosition(localPosition);
-                            bInfluence.UpdateWorldPosition(floater.transform.localToWorldMatrix);
-                        }
-                        break;
-                    case Tool.Scale:
-                        Vector3 scale = Handles.ScaleHandle(new Vector3(radius, radius, radius), worldPosition, floater.transform.rotation);
-                        for (int i = 0; i < 3; i++)
-                        {
-                            if (scale[i] != radius)
-                            {
-                                Undo.RecordObject(target, "Scale Buoyancy Object");
-                                bInfluence.SetRadius(Mathf.Max(scale[i], 0f));
-                                break;
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
-
-                if (Event.current.type == EventType.Repaint)
-                {
-                    Handles.color = new Color(0.7f, 0.2f, 0.1f, 0.5f);
-                    Handles.SphereHandleCap(-1, worldPosition, Quaternion.identity, diameter, EventType.Repaint);
-                }
-            }
-
-            Handles.color = prevColor;
-        }
-
-        private void DrawBuoyancyInfluencesListHeader(Rect rect)
-        {
-            EditorGUI.LabelField(rect, "Buoyancy Influences");
-        }
-
-        private float GetDrawBuoyancyInfluencesListElementHeight(int index)
-        {
-            SerializedProperty property = buoyancyInfluencesList.serializedProperty.GetArrayElementAtIndex(index);
-            return EditorGUI.GetPropertyHeight(property);
-        }
-
-        private void DrawBuoyancyInfluencesListElement(Rect rect, int index, bool isActive, bool isFocused)
-        {
-            SerializedProperty property = buoyancyInfluencesList.serializedProperty.GetArrayElementAtIndex(index);
-            EditorGUI.PropertyField(rect, property);
-
-            /*float h = 0f;
-            Rect r = new Rect(rect.x, rect.y, rect.width, h);
-
-            GUI.enabled = !uniformSamplerIterations.boolValue;
-            currentProp = property.FindPropertyRelative("oceanSampler").FindPropertyRelative("iterations");
-            r.y += h + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
-            h = EditorGUI.GetPropertyHeight(currentProp);
-            r.height = h;
-            EditorGUI.PropertyField(r, currentProp);
-
-            GUI.enabled = !uniformForce.boolValue;
-            currentProp = property.FindPropertyRelative("force");
-            r.y += h + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
-            h = EditorGUI.GetPropertyHeight(currentProp);
-            r.height = h;
-            EditorGUI.PropertyField(r, currentProp);
-
-            GUI.enabled = !uniformRadius.boolValue;
-            currentProp = property.FindPropertyRelative("radius");
-            r.y += h + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
-            h = EditorGUI.GetPropertyHeight(currentProp);
-            r.height = h;
-            EditorGUI.PropertyField(r, currentProp);
-
-            GUI.enabled = true;
-
-            currentProp = property.FindPropertyRelative("localPosition");
-            r.y += h + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
-            h = EditorGUI.GetPropertyHeight(currentProp);
-            r.height = h;
-            EditorGUI.PropertyField(r, currentProp);*/
-        }
-
-        private void UpdateBuoyancyInfluencesListProperty(string propertyName)
-        {
-            for (int i = 0; i < buoyancyInfluencesList.count; i++)
-            {
-                SerializedProperty prop = buoyancyInfluencesList.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative(propertyName);
-            }
+            DrawTransformHandlesAndUpdateValues(floater, floaterTransform, anyBuoyancyInfluenceSelected);
         }
     }
 }

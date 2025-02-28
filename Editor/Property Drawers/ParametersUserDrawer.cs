@@ -202,4 +202,19 @@ namespace GOcean
             base.OnGUI(position, property, label);
         }
     }
+
+    [CustomPropertyDrawer(typeof(PhysicsParamsUser))]
+    public class PhysicsParamsUserDrawer : BaseParamsUserDrawer
+    {
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            return base.GetPropertyHeight(property, label);
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            SetManagedReferenceValueIfNull<PhysicsParamsUser>(property);
+            base.OnGUI(position, property, label);
+        }
+    }
 }

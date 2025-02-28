@@ -65,11 +65,19 @@ namespace GOcean
             oceanSampler.position = localToWorldMatrix.MultiplyPoint(localPosition);
         }
 
+        /// <summary>
+        /// Applies a force to a rigid body at the position of this buoyancy influence, increasing based on how much of the influence
+        /// is submerged underwater.
+        /// </summary>
+        /// <param name="rigidbody"></param>
+        /// <returns>
+        /// Submerged percentage, 0-1 range.
+        /// </returns>
         public float ApplyForce(Rigidbody rigidbody)
         {
             float submergedPercentage = Mathf.Clamp01((oceanSampler.outputData.height - (oceanSampler.position.y - radius)) / (2f * radius));
             float submergedVolume = submergedPercentage * (4f * Mathf.PI * radius * radius);
-            Vector3 buoyantForce = submergedVolume * force * Time.deltaTime * UnityEngine.Physics.gravity.magnitude * oceanSampler.outputData.normal;
+            Vector3 buoyantForce = submergedVolume * force * Time.fixedDeltaTime * UnityEngine.Physics.gravity.magnitude * oceanSampler.outputData.normal;
             
             rigidbody.AddForceAtPosition(buoyantForce, oceanSampler.position);
 

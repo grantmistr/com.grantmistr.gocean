@@ -8,7 +8,7 @@ namespace GOcean
     public class ParametersUser : ScriptableObject
     {
         public const string RESOURCE_STRING = "GOcean_DefaultOceanParameters";
-        public const int NUM_COMPONENTS = 10;
+        public const int NUM_COMPONENTS = 11;
 
         [SerializeReference]
         public GenericParamsUser generic = new GenericParamsUser();
@@ -30,6 +30,8 @@ namespace GOcean
         public UnderwaterParamsUser underwater = new UnderwaterParamsUser();
         [SerializeReference]
         public MeshParamsUser mesh = new MeshParamsUser();
+        [SerializeReference]
+        public PhysicsParamsUser physics = new PhysicsParamsUser();
 
         private BaseParamsUser this[int i]
         {
@@ -47,6 +49,7 @@ namespace GOcean
                     7 => caustic,
                     8 => underwater,
                     9 => mesh,
+                    10 => physics,
                     _ => throw new System.Exception("Invalid index.")
                 };
             }
@@ -328,5 +331,13 @@ namespace GOcean
         public float displacementFalloff = 3f;
         [Tooltip("Won't show up in build.")]
         public bool drawWireframe = false;
+    }
+
+    [System.Serializable]
+    public class PhysicsParamsUser : BaseParamsUser
+    {
+        [Tooltip("Multiplier for rigid body dampening when the rigid body is in water.")]
+        [Min(0f)]
+        public float waterDampeningMultiplier = 1000f;
     }
 }

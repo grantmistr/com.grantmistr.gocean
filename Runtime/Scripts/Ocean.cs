@@ -87,6 +87,7 @@ namespace GOcean
         public Vector4 CascadeShadowSplits => constants.perCameraData[0].cascadeShadowSplits;
         public Vector4 CameraPositionStepped => constants.perCameraData[0].cameraPositionStepped;
         public float CameraZRotation => constants.perCameraData[0].cameraZRotation;
+        public float WaterDampeningMultiplier => components.Physics.waterDampeningMultiplier;
 
         public Vector2 WindDirection
         {

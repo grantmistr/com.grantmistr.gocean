@@ -11,6 +11,8 @@ namespace GOcean
         public const uint HEIGHT_SAMPLE_ITERATIONS = 2;
         private const uint DISPLACEMENT_TEXTURE_READBACK_COUNT = 4;
 
+        public float waterDampeningMultiplier;
+
         public Texture2D[] spectrumTextureReadback = new Texture2D[DISPLACEMENT_TEXTURE_READBACK_COUNT];
         
         private bool waitingOnRequest = false;
@@ -21,10 +23,17 @@ namespace GOcean
 
         public override void Initialize()
         {
+            InitializeParams(ocean.parametersUser.physics);
+
             InitializeTextures();
         }
 
-        public override void InitializeParams(BaseParamsUser userParams) { }
+        public override void InitializeParams(BaseParamsUser userParams)
+        {
+            PhysicsParamsUser u = userParams as PhysicsParamsUser;
+
+            waterDampeningMultiplier = u.waterDampeningMultiplier;
+        }
 
         public override void SetShaderParams() { }
 
