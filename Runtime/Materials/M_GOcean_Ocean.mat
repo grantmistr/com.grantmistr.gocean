@@ -298,7 +298,7 @@ Material:
     - _UnderwaterSurfaceEmissionStrength: 30
     - _UseEmissiveIntensity: 0
     - _UseShadowThreshold: 0
-    - _WaveDisplacementFade: 100
+    - _WaveDisplacementFade: 40
     - _ZTestDepthEqualForOpaque: 0
     - _ZTestGBuffer: 4
     - _ZTestTransparent: 0
