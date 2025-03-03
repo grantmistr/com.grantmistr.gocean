@@ -14,6 +14,29 @@ namespace GOcean
         [SerializeField]
         private OceanSampler oceanSampler = new OceanSampler();
 
+        public BuoyancyInfluence() { }
+
+        public BuoyancyInfluence(float force, float radius, uint iterations)
+        {
+            this.force = force;
+            this.radius = radius;
+            this.localPosition = Vector3.zero;
+            this.oceanSampler.iterations = iterations;
+        }
+
+        public BuoyancyInfluence(float force, float radius, Vector3 localPosition, uint iterations)
+        {
+            this.force = force;
+            this.radius = radius;
+            this.localPosition = localPosition;
+            this.oceanSampler.iterations = iterations;
+        }
+
+        public BuoyancyInfluence Clone()
+        {
+            return new BuoyancyInfluence(force, radius, localPosition, oceanSampler.iterations);
+        }
+
         public void Initialize()
         {
             Ocean.OceanSamplers.Add(oceanSampler);
@@ -60,6 +83,21 @@ namespace GOcean
             localPosition = position;
         }
 
+        public void UpdateLocalPosition(Matrix4x4 worldToLocalMatrix)
+        {
+            localPosition = worldToLocalMatrix.MultiplyPoint(oceanSampler.position);
+        }
+
+        public Vector3 GetWorldPosition()
+        {
+            return oceanSampler.position;
+        }
+
+        public void SetWorldPosition(Vector3 position)
+        {
+            oceanSampler.position = position;
+        }
+
         public void UpdateWorldPosition(Matrix4x4 localToWorldMatrix)
         {
             oceanSampler.position = localToWorldMatrix.MultiplyPoint(localPosition);
@@ -82,11 +120,6 @@ namespace GOcean
             rigidbody.AddForceAtPosition(buoyantForce, oceanSampler.position);
 
             return submergedPercentage;
-        }
-
-        public Vector3 GetWorldPosition()
-        {
-            return oceanSampler.position;
         }
     }
 }
