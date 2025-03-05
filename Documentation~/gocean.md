@@ -55,6 +55,7 @@ There is a Floater script, `Floater.cs`, that will apply buoyant force to the ri
 | CascadeShadowSplits		| Each component of the vector is the distance to the next split.																|
 | CameraPositionStepped		| Stepped camera position based on mesh chunk size. XY is the stepped position, ZW is the camera position modded by chunk size.	|
 | CameraZRotation			| Rotation around the cameras forward axis in radians.																			|
+| WaterDampeningMultiplier	| Multiplier for rigid body linear dampening when submerged in water.															|
 | WindDirection				| Direction the waves will generally be moving.																					|
 | WindSpeed					| Controls the amplitude of the waves.																							|
 | WaterHeight				| Height of the ocean plane, not to be confused with wave amplitude.															|
