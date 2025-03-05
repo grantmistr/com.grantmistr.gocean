@@ -6,7 +6,7 @@ namespace GOcean
     public class Floater : MonoBehaviour
     {
         public BuoyancyInfluence[] buoyancyInfluences;
-        new private Rigidbody rigidbody;
+        private Rigidbody rb;
         private float initialLinearDamping;
 
         private void OnEnable()
@@ -23,8 +23,8 @@ namespace GOcean
                 i.Initialize(m);
             }
 
-            rigidbody = GetComponent<Rigidbody>();
-            initialLinearDamping = rigidbody.linearDamping;
+            rb = GetComponent<Rigidbody>();
+            initialLinearDamping = rb.linearDamping;
         }
 
         private void OnDisable()
@@ -44,24 +44,22 @@ namespace GOcean
                 foreach (BuoyancyInfluence i in buoyancyInfluences)
                 {
                     i.UpdateWorldPosition(m);
-                    submergedVolumePercentage += i.ApplyForce(rigidbody);
+                    submergedVolumePercentage += i.ApplyForce(rb);
                 }
                 submergedVolumePercentage /= buoyancyInfluences.Length;
 
-                rigidbody.linearDamping = Mathf.Lerp(initialLinearDamping, initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier, submergedVolumePercentage);
-                //rigidbody.linearDamping = initialLinearDamping + initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier * submergedVolumePercentage;
+                rb.linearDamping = Mathf.Lerp(initialLinearDamping, initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier, submergedVolumePercentage);
             }
             else
             {
                 float submergedVolumePercentage = 0f;
                 foreach (BuoyancyInfluence i in buoyancyInfluences)
                 {
-                    submergedVolumePercentage += i.ApplyForce(rigidbody);
+                    submergedVolumePercentage += i.ApplyForce(rb);
                 }
                 submergedVolumePercentage /= buoyancyInfluences.Length;
 
-                rigidbody.linearDamping = Mathf.Lerp(initialLinearDamping, initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier, submergedVolumePercentage);
-                //rigidbody.linearDamping = initialLinearDamping + initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier * submergedVolumePercentage;
+                rb.linearDamping = Mathf.Lerp(initialLinearDamping, initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier, submergedVolumePercentage);
             }
         }
 

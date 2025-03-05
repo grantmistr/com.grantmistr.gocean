@@ -32,6 +32,8 @@ MonoBehaviour:
     rid: 3806890994986385756
   mesh:
     rid: 3806890994986385757
+  physics:
+    rid: 3806891414473146368
   references:
     version: 2
     RefIds:
@@ -46,7 +48,7 @@ MonoBehaviour:
       type: {class: WindParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
         windSpeed: 9
-        windDirection: 5
+        windDirection: 5.2
         windSpeedMin: 3
         windSpeedMax: 100
     - rid: 3806890994986385750
@@ -75,13 +77,13 @@ MonoBehaviour:
         distantSmoothness: 0.7
         smoothnessTransitionDistance: 2000
         refractionStrength: 5
-        waterColor: {r: 0.3915094, g: 0.70573, b: 1, a: 1}
+        waterColor: {r: 0.3915094, g: 0.70624596, b: 1, a: 1}
         scatteringColor: {r: 0.2520915, g: 0.3896481, b: 0.5188679, a: 1}
         scatteringFalloff: 5
     - rid: 3806890994986385752
       type: {class: FoamParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
-        foamTexture: {fileID: 0}
+        foamTexture: {fileID: 2800000, guid: 3848ab24e413ebf42a03f6e824055e0f, type: 3}
         foamColor: {r: 0.89, g: 0.88, b: 0.87, a: 1}
         foamTextureFadeDistance: 1000
         foamTiling: 2
@@ -101,7 +103,7 @@ MonoBehaviour:
       data:
         useTerrainInfluence: 1
         heightmapOffset: 3
-        waveDisplacementFade: 100
+        waveDisplacementFade: 40
         shoreWaveCount: 5
         shoreWaveStartDepth: 8
         shoreWaveFalloff: 0.4
@@ -116,7 +118,7 @@ MonoBehaviour:
       data:
         screenWaterNoiseTexture: {fileID: 2800000, guid: c9cffcf4147442f4394f72ea9228744c, type: 3}
         screenWaterTiling: 0.2
-        screenWaterFadeSpeed: 800
+        screenWaterFadeSpeed: 400
     - rid: 3806890994986385755
       type: {class: CausticParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
@@ -149,3 +151,7 @@ MonoBehaviour:
         cullPadding: 0
         displacementFalloff: 3
         drawWireframe: 0
+    - rid: 3806891414473146368
+      type: {class: PhysicsParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
+      data:
+        waterDampeningMultiplier: 1000
