@@ -1,9 +1,9 @@
 # Changelog
 
-## 1.1.0 (2025-03-04)
-- Proper physics; floater component that interacts with rigidbody
+## 1.1.0 (2025-03-05)
+- Proper buoyancy physics; floater component that interacts with rigidbody
 - Public method for sampling ocean
-- User setting for linear dampening multiplier
+- User setting for linear dampening multiplier for rigidbodies
 
 ## 1.0.1 (2025-02-15)
 - Terrain system bug fixes
