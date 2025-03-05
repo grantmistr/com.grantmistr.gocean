@@ -49,6 +49,7 @@ namespace GOcean
                 submergedVolumePercentage /= buoyancyInfluences.Length;
 
                 rigidbody.linearDamping = Mathf.Lerp(initialLinearDamping, initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier, submergedVolumePercentage);
+                //rigidbody.linearDamping = initialLinearDamping + initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier * submergedVolumePercentage;
             }
             else
             {
@@ -60,6 +61,7 @@ namespace GOcean
                 submergedVolumePercentage /= buoyancyInfluences.Length;
 
                 rigidbody.linearDamping = Mathf.Lerp(initialLinearDamping, initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier, submergedVolumePercentage);
+                //rigidbody.linearDamping = initialLinearDamping + initialLinearDamping * Ocean.Instance.WaterDampeningMultiplier * submergedVolumePercentage;
             }
         }
 

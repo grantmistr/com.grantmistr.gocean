@@ -128,7 +128,7 @@ namespace GOcean
             {
                 didMouseDown = false;
 
-                int relativeControlID = GUIUtility.hotControl - baseControlID - 1;
+                int relativeControlID = GUIUtility.hotControl - baseControlID - 4;
                 int buoyancyInfluenceIndex = relativeControlID / BuoyancyInfluencePropertyDrawer.PROPERTY_COUNT;
 
                 // is a buoyancy influence object control selected
@@ -240,7 +240,7 @@ namespace GOcean
                     {
                         if (selectedBuoyancyInfluences.Count > 0)
                         {
-                            int lastSelectedIndex = selectedBuoyancyInfluences[selectedBuoyancyInfluences.Count - 1];
+                            int lastSelectedIndex = selectedBuoyancyInfluences[^1];
 
                             while (lastSelectedIndex < index)
                             {
@@ -345,6 +345,11 @@ namespace GOcean
                 isSelected = UpdateSelection(index, backgroundRect);
             }
 
+            if ((Event.current.type == EventType.Repaint) && isSelected)
+            {
+                EditorGUI.DrawRect(backgroundRect, SELECTED_BACKGROUND_COLOR);
+            }
+
             SerializedProperty iterations = buoyancyInfluence.FindPropertyRelative("oceanSampler").FindPropertyRelative("iterations");
             SerializedProperty force = buoyancyInfluence.FindPropertyRelative("force");
             SerializedProperty radius = buoyancyInfluence.FindPropertyRelative("radius");
@@ -352,18 +357,15 @@ namespace GOcean
 
             position.y += BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
             position.height = EditorGUIUtility.singleLineHeight;
-
-            if ((Event.current.type == EventType.Repaint) && isSelected)
-            {
-                EditorGUI.DrawRect(backgroundRect, SELECTED_BACKGROUND_COLOR);
-            }
             
             // Modified fields will update the corresponding field on all selected buoyancy influence objects
 
             EditorGUI.LabelField(position, new GUIContent($"Buoyancy Influence {index}"), EditorStyles.boldLabel);
 
             // Iterations
-            position.y += EditorGUIUtility.singleLineHeight + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
+            // set name for control so selection array can be updated if tabbing through
+            GUI.SetNextControlName($"{EDITOR_PREFS_STRING_KEY}{index}iterations");
+            position.y += position.height + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
             uint newIterations = (uint)EditorGUI.IntField(position, new GUIContent(iterations.displayName), (int)iterations.uintValue);
 
             // Force
@@ -377,8 +379,28 @@ namespace GOcean
 
             // Local Position
             position.y += EditorGUIUtility.singleLineHeight + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
-            position.height = EditorGUI.GetPropertyHeight(localPosition);
-            Vector3 newLocalPosition = EditorGUI.Vector3Field(position, new GUIContent(localPosition.displayName), localPosition.vector3Value);
+            Rect labelRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, position.height);
+            EditorGUI.LabelField(labelRect, localPosition.displayName);
+
+            Rect fieldRect = new Rect(
+                labelRect.x + labelRect.width + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT,
+                labelRect.y,
+                (position.width - labelRect.width) / 3f - BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT,
+                labelRect.height);
+
+            EditorGUIUtility.labelWidth = 15f;
+
+            float x = EditorGUI.FloatField(fieldRect, "X", localPosition.vector3Value.x);
+            
+            fieldRect.x += fieldRect.width + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
+            float y = EditorGUI.FloatField(fieldRect, "Y", localPosition.vector3Value.y);
+
+            // set name for control so selection array can be updated if tabbing through
+            GUI.SetNextControlName($"{EDITOR_PREFS_STRING_KEY}{index}localPositionX");
+            fieldRect.x += fieldRect.width + BuoyancyInfluencePropertyDrawer.PADDING_HEIGHT;
+            float z = EditorGUI.FloatField(fieldRect, "Z", localPosition.vector3Value.z);
+            
+            EditorGUIUtility.labelWidth = 0f;
 
             // update during used event
             if ((Event.current.type == EventType.Used) && isSelected)
@@ -406,18 +428,18 @@ namespace GOcean
                 }
                 else
                 {
-                    bool updateX = newLocalPosition.x != localPosition.vector3Value.x;
-                    bool updateY = newLocalPosition.y != localPosition.vector3Value.y;
-                    bool updateZ = newLocalPosition.z != localPosition.vector3Value.z;
+                    bool updateX = x != localPosition.vector3Value.x;
+                    bool updateY = y != localPosition.vector3Value.y;
+                    bool updateZ = z != localPosition.vector3Value.z;
                     if (updateX || updateY || updateZ)
                     {
                         foreach (int i in selectedBuoyancyInfluences)
                         {
                             SerializedProperty p = buoyancyInfluences.GetArrayElementAtIndex(i).FindPropertyRelative("localPosition");
                             Vector3 v;
-                            v.x = updateX ? newLocalPosition.x : p.vector3Value.x;
-                            v.y = updateY ? newLocalPosition.y : p.vector3Value.y;
-                            v.z = updateZ ? newLocalPosition.z : p.vector3Value.z;
+                            v.x = updateX ? x : p.vector3Value.x;
+                            v.y = updateY ? y : p.vector3Value.y;
+                            v.z = updateZ ? z : p.vector3Value.z;
                             p.vector3Value = v;
                         }
                     }
@@ -522,7 +544,10 @@ namespace GOcean
             // button that appends a new buoyancy influence object to array
             if (GUI.Button(rect, new GUIContent("+"), CUSTOM_BUTTON_STYLE))
             {
-                AppendNewBuoyancyInfluence(floater);
+                if (Event.current.type == EventType.Used)
+                {
+                    AppendNewBuoyancyInfluence(floater);
+                }
             }
 
             rect.x += rect.width;
@@ -530,34 +555,90 @@ namespace GOcean
             // button to remove selected indices
             if (GUI.Button(rect, new GUIContent("-"), CUSTOM_BUTTON_STYLE))
             {
-                RemoveSelectedBuoyancyInfluences(floater);
+                if (Event.current.type == EventType.Used)
+                {
+                    RemoveSelectedBuoyancyInfluences(floater);
+                    Event.current.Use();
+                }
             }
+        }
+
+        private void HandleTabNavigationForBuoyancyInfluences()
+        {
+            if (buoyancyInfluencesFoldout)
+            {
+                if ((GUIUtility.hotControl == 0) && (Event.current.type == EventType.Used) && !didHotControlSelectionUpdateInspector)
+                {
+                    string s = GUI.GetNameOfFocusedControl();
+                    if (!string.IsNullOrEmpty(s))
+                    {
+                        if (s.StartsWith(EDITOR_PREFS_STRING_KEY))
+                        {
+                            int arrayIndex = (int)char.GetNumericValue(s[EDITOR_PREFS_STRING_KEY.Length]);
+
+                            if (!selectedBuoyancyInfluences.Contains(arrayIndex))
+                            {
+                                selectedBuoyancyInfluences.Clear();
+                                selectedBuoyancyInfluences.Add(arrayIndex);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private float GetBuoyancyInfluencesBoundingRectHeight()
+        {
+            const float padding = 8f;
+            float height = EditorGUIUtility.singleLineHeight + padding;
+
+            if (buoyancyInfluencesFoldout)
+            {
+                // add space for + , - buttons
+                height += EditorGUIUtility.singleLineHeight;
+
+                if (buoyancyInfluences.arraySize > 0)
+                {
+                    height += EditorGUI.GetPropertyHeight(buoyancyInfluences.GetArrayElementAtIndex(0)) * (float)buoyancyInfluences.arraySize;
+                }
+                else
+                {
+                    height += EditorGUIUtility.singleLineHeight;
+                }
+            }
+
+            return height;
         }
 
         private void DrawBuoyancyInfluencesInspector()
         {
+            // keyboard stuff
+            if (Event.current.type == EventType.KeyDown)
+            {
+                if (selectedBuoyancyInfluences.Count > 0)
+                {
+                    // del / backspace remove
+                    if ((Event.current.keyCode == KeyCode.Backspace) || (Event.current.keyCode == KeyCode.Delete))
+                    {
+                        RemoveSelectedBuoyancyInfluences(floater);
+                        Event.current.Use();
+                    }
+
+                    // duplicate selected with CTRL+D
+                    else if (Event.current.control && (Event.current.keyCode == KeyCode.D))
+                    {
+                        DuplicateSelectedBuoyancyInfluences(floater);
+                        Event.current.Use();
+                    }
+                }
+            }
+
             // only draw buoyancy influences array if one floater is selected
             if (targets.Length == 1)
             {
                 const float padding = 8f;
-                float height = EditorGUIUtility.singleLineHeight + padding;
 
-                if (buoyancyInfluencesFoldout)
-                {
-                    // add space for + , - buttons
-                    height += EditorGUIUtility.singleLineHeight;
-
-                    if (buoyancyInfluences.arraySize > 0)
-                    {
-                        height += EditorGUI.GetPropertyHeight(buoyancyInfluences.GetArrayElementAtIndex(0)) * (float)buoyancyInfluences.arraySize;
-                    }
-                    else
-                    {
-                        height += EditorGUIUtility.singleLineHeight;
-                    }
-                }
-
-                Rect boundingRect = GUILayoutUtility.GetRect(0f, height, GUILayout.ExpandWidth(true));
+                Rect boundingRect = GUILayoutUtility.GetRect(EditorGUIUtility.currentViewWidth, GetBuoyancyInfluencesBoundingRectHeight());
 
                 // ********** BEGIN PROP ********** //
                 EditorGUI.BeginProperty(boundingRect, GUIContent.none, buoyancyInfluences);
@@ -579,26 +660,9 @@ namespace GOcean
                             BACKGROUND_COLOR);
                     }
 
-                    DrawBuoyancyInfluencesAddSubButtons(boundingRect);
-
-                    if (Event.current.type == EventType.KeyDown)
-                    {
-                        // del / backspace remove
-                        if ((Event.current.keyCode == KeyCode.Backspace) || (Event.current.keyCode == KeyCode.Delete))
-                        {
-                            RemoveSelectedBuoyancyInfluences(floater);
-                            Event.current.Use();
-                        }
-
-                        // duplicate selected with CTRL+D
-                        else if (Event.current.control && (Event.current.keyCode == KeyCode.D))
-                        {
-                            DuplicateSelectedBuoyancyInfluences(floater);
-                            Event.current.Use();
-                        }
-                    }
-
                     UpdateSelectionWithHotControl();
+
+                    DrawBuoyancyInfluencesAddSubButtons(boundingRect);
 
                     Rect propRect = new Rect(boundingRect.x + 6f, foldoutRect.y + foldoutRect.height, boundingRect.width - 12f, 0f);
                     Rect backgroundRect = new Rect(boundingRect.x, propRect.y, boundingRect.width, 0f);
@@ -619,9 +683,11 @@ namespace GOcean
 
                 EditorGUI.EndProperty();
                 // *********** END PROP *********** //
+
+                HandleTabNavigationForBuoyancyInfluences();
             }
 
-            if ((Event.current.type == EventType.Layout) && (GUIUtility.hotControl == 0))
+            if (GUIUtility.hotControl == 0)
             {
                 didHotControlSelectionUpdateInspector = false;
             }
@@ -629,6 +695,18 @@ namespace GOcean
 
         public override void OnInspectorGUI()
         {
+            if (targets.Length > 1)
+            {
+                foreach (Object o in targets)
+                {
+                    Floater f = o as Floater;
+                    if (Selection.activeGameObject == f.gameObject)
+                    {
+                        floater = f;
+                    }
+                }
+            }
+
             serializedObject.Update();
 
             using (new GUILayout.HorizontalScope())
@@ -637,9 +715,13 @@ namespace GOcean
                 iterations = (uint)EditorGUILayout.IntField((int)iterations);
                 if (update)
                 {
-                    for (int i = 0; i < buoyancyInfluences.arraySize; i++)
+                    Undo.RecordObjects(targets, "Set Iterations on Selected Floaters");
+                    foreach (Object o in targets)
                     {
-                        buoyancyInfluences.GetArrayElementAtIndex(i).FindPropertyRelative("oceanSampler").FindPropertyRelative("iterations").uintValue = iterations;
+                        foreach (BuoyancyInfluence i in (o as Floater).buoyancyInfluences)
+                        {
+                            i.SetSamplerIterations(iterations);
+                        }
                     }
                 }
             }
@@ -650,9 +732,13 @@ namespace GOcean
                 force = EditorGUILayout.FloatField(force);
                 if (update)
                 {
-                    for (int i = 0; i < buoyancyInfluences.arraySize; i++)
+                    Undo.RecordObjects(targets, "Set Force on Selected Floaters");
+                    foreach (Object o in targets)
                     {
-                        buoyancyInfluences.GetArrayElementAtIndex(i).FindPropertyRelative("force").floatValue = force;
+                        foreach (BuoyancyInfluence i in (o as Floater).buoyancyInfluences)
+                        {
+                            i.SetForce(force);
+                        }
                     }
                 }
             }
@@ -663,9 +749,13 @@ namespace GOcean
                 radius = EditorGUILayout.FloatField(radius);
                 if (update)
                 {
-                    for (int i = 0; i < buoyancyInfluences.arraySize; i++)
+                    Undo.RecordObjects(targets, "Set Radius on Selected Floaters");
+                    foreach (Object o in targets)
                     {
-                        buoyancyInfluences.GetArrayElementAtIndex(i).FindPropertyRelative("radius").floatValue = radius;
+                        foreach (BuoyancyInfluence i in (o as Floater).buoyancyInfluences)
+                        {
+                            i.SetRadius(radius);
+                        }
                     }
                 }
             }
@@ -852,6 +942,7 @@ namespace GOcean
             if ((Event.current.type == EventType.MouseUp) && (Event.current.button == 0) && anyBuoyancyInfluenceSelected && (GUIUtility.hotControl == 0))
             {
                 selectedBuoyancyInfluences.Clear();
+                anyBuoyancyInfluenceSelected = false;
 
                 if (singleObjectSelected)
                 {
@@ -861,7 +952,7 @@ namespace GOcean
                 return;
             }
 
-            if (Event.current.type == EventType.KeyDown)
+            if ((Event.current.type == EventType.KeyDown) && anyBuoyancyInfluenceSelected)
             {
                 // handle keyboard input delete
                 if ((Event.current.keyCode == KeyCode.Backslash) || (Event.current.keyCode == KeyCode.Delete))

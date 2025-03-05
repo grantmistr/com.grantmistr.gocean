@@ -13,6 +13,8 @@ namespace GOcean
         private Vector3 localPosition = Vector3.zero;
         [SerializeField]
         private OceanSampler oceanSampler = new OceanSampler();
+        private float diameter = 2f;
+        private float volume = 4f * Mathf.PI;
 
         public BuoyancyInfluence() { }
 
@@ -45,6 +47,8 @@ namespace GOcean
         public void Initialize(Matrix4x4 localToWorldMatrix)
         {
             UpdateWorldPosition(localToWorldMatrix);
+            diameter = 2f * radius;
+            volume = 4f * Mathf.PI * radius * radius;
             Ocean.OceanSamplers.Add(oceanSampler);
         }
 
@@ -71,6 +75,8 @@ namespace GOcean
         public void SetRadius(float radius)
         {
             this.radius = radius;
+            diameter = radius + radius;
+            volume = 4f * Mathf.PI * radius;
         }
 
         public Vector3 GetLocalPosition()
@@ -113,8 +119,8 @@ namespace GOcean
         /// </returns>
         public float ApplyForce(Rigidbody rigidbody)
         {
-            float submergedPercentage = Mathf.Clamp01((oceanSampler.outputData.height - (oceanSampler.position.y - radius)) / (2f * radius));
-            float submergedVolume = submergedPercentage * (4f * Mathf.PI * radius * radius);
+            float submergedPercentage = Mathf.Clamp01((oceanSampler.outputData.height - (oceanSampler.position.y - radius)) / diameter);
+            float submergedVolume = submergedPercentage * volume;
             Vector3 buoyantForce = submergedVolume * force * Time.fixedDeltaTime * UnityEngine.Physics.gravity.magnitude * oceanSampler.outputData.normal;
             
             rigidbody.AddForceAtPosition(buoyantForce, oceanSampler.position);

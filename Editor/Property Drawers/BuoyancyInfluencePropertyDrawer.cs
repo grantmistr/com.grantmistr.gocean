@@ -18,8 +18,8 @@ namespace GOcean
 
             return
                 PADDING_HEIGHT + PADDING_HEIGHT
-                + (EditorGUIUtility.singleLineHeight + PADDING_HEIGHT) * 4f
-                + EditorGUI.GetPropertyHeight(localPosition);
+                + (EditorGUIUtility.singleLineHeight + PADDING_HEIGHT) * 5f;
+                //+ EditorGUI.GetPropertyHeight(localPosition);
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
