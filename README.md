@@ -28,9 +28,12 @@ GOcean is an infinite ocean rendering system for Unity HDRP.
 
 The Ocean can also be created from script. Only one Ocean instance can be in a scene at a time. Access this instance using `Ocean.Instance`.
 
-You can query the ocean height and normal at an XZ position by adding an `OceanSampler` object to the static `Ocean.OceanSamplers` list.
+You can query the ocean height and normal at an XZ position by adding an `OceanSampler` object to the static `Ocean.OceanSamplers` list, which gets updated
+on fixed update.
 
 There is a Simple Floater script, `SimpleFloater.cs`, that will stick any game object it is applied to, to the ocean surface.
+
+There is a Floater script, `Floater.cs`, that will apply buoyant force to the rigibody of the game object it is attached to.
 
 ### Reference
 
@@ -63,6 +66,7 @@ There is a Simple Floater script, `SimpleFloater.cs`, that will stick any game o
 | ReInitialize				| Will release resources (like render textures) before initializing.															|
 | UpdateOnDemandDataBuffer	| Updates the OnDemandData constant buffer. Call this after modifying ocean properties.											|
 | UpdateConstantDataBuffer	| Updates the ConstantData constant buffer.																						|
+| SampleOcean				| Sample the ocean height and normal at a position.																				|
 
 ### Samples
 

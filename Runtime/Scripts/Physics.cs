@@ -136,6 +136,46 @@ namespace GOcean
             sampler.outputData.normal = new Vector3(normalSample.x * terrainSample, 1f, normalSample.y * terrainSample).normalized;
         }
 
+        public OceanSampleOutputData SampleOcean(Vector3 position, uint iterations = HEIGHT_SAMPLE_ITERATIONS)
+        {
+            Vector3 uvTerrain = position;
+            Vector3 uvTerrainStep = uvTerrain;
+
+            Vector2 uv0 = new Vector2(position.x / components.Displacement.patchSize.x, position.z / components.Displacement.patchSize.x);
+            Vector2 uv1 = new Vector2(position.x / components.Displacement.patchSize.y, position.z / components.Displacement.patchSize.y);
+            Vector2 uvStep0 = uv0;
+            Vector2 uvStep1 = uv1;
+
+            for (uint i = 0; i < iterations; i++)
+            {
+                DoSampleStep(uv0, uv1, ref uvStep0, ref uvStep1, uvTerrain, ref uvTerrainStep);
+            }
+
+            Vector2Int lookupCoord = components.Terrain.GetTerrainLookupCoord(uvTerrainStep);
+            float terrainSample = 1f;
+
+            if (!components.Terrain.InvalidTerrainCoord(lookupCoord))
+            {
+                if (!components.Terrain.InvalidTerrainLookupIndex(lookupCoord, out int index))
+                {
+                    terrainSample = components.Terrain.GetTerrainFromIndex(index).SampleHeight(uvTerrainStep);
+                    terrainSample = components.Generic.waterHeight - terrainSample;
+                    terrainSample /= components.Terrain.waveDisplacementFade;
+                    terrainSample = Mathf.Clamp01(terrainSample);
+                }
+            }
+
+            Vector4 displacementSample = spectrumTextureReadback[0].GetPixelBilinear(uvStep0.x, uvStep0.y);
+            displacementSample += (Vector4)spectrumTextureReadback[2].GetPixelBilinear(uvStep1.x, uvStep1.y);
+
+            Vector4 normalSample = spectrumTextureReadback[1].GetPixelBilinear(uvStep0.x, uvStep0.y);
+            normalSample += (Vector4)spectrumTextureReadback[3].GetPixelBilinear(uvStep1.x, uvStep1.y);
+
+            return new OceanSampleOutputData(
+                displacementSample.y * terrainSample + components.Generic.waterHeight,
+                new Vector3(normalSample.x * terrainSample, 1f, normalSample.y * terrainSample).normalized);
+        }
+
         private void DoSampleStep(Vector2 uv0, Vector2 uv1, ref Vector2 uvStep0, ref Vector2 uvStep1, Vector3 uvTerrain, ref Vector3 uvTerrainStep)
         {
             Vector2Int lookupCoord = components.Terrain.GetTerrainLookupCoord(uvTerrainStep);

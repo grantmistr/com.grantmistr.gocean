@@ -478,5 +478,16 @@ namespace GOcean
         {
             constants.UpdateConstantData(components);
         }
+
+        /// <summary>
+        /// Sample the ocean at a position, with optional number of iterations for more, or less accurate result.
+        /// </summary>
+        /// <param name="samplePosition"></param>
+        /// <param name="iterations"></param>
+        /// <returns></returns>
+        public OceanSampleOutputData SampleOcean(Vector3 samplePosition, uint iterations = Physics.HEIGHT_SAMPLE_ITERATIONS)
+        {
+            return components.Physics.SampleOcean(samplePosition, iterations);
+        }
     }
 }

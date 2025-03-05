@@ -9,7 +9,7 @@ namespace GOcean
         public const float PROPERTY_HEIGHT = 20f, PADDING_HEIGHT = 4f;
         public const float OFFSET_STEP = PROPERTY_HEIGHT + PADDING_HEIGHT;
 
-        // label field counts as 1, localPosition counts as 4 with its 3 subfields
+        // label counts as 1, localPosition counts as 4 with its 3 subfields
         public const int PROPERTY_COUNT = 8;
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)

@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.1.0
-- Proper physics
-- Floater component that interfaces with rigidbody
+## 1.1.0 (2025-03-04)
+- Proper physics; floater component that interacts with rigidbody
+- Public method for sampling ocean
 
 ## 1.0.1 (2025-02-15)
 - Terrain system bug fixes

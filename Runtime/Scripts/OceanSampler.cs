@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace GOcean
 {
+    [System.Serializable]
     public class OceanSampleOutputData
     {
         /// <summary>
@@ -13,6 +14,18 @@ namespace GOcean
         /// Normal vector at position
         /// </summary>
         public Vector3 normal;
+
+        public OceanSampleOutputData()
+        {
+            height = 0f;
+            normal = Vector3.up;
+        }
+
+        public OceanSampleOutputData(float height, Vector3 normal)
+        {
+            this.height = height;
+            this.normal = normal;
+        }
     }
 
     [System.Serializable]

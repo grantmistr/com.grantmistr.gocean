@@ -1,6 +1,6 @@
 {
   "name": "com.grantmistr.gocean",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "displayName": "GOcean",
   "description": "Infinite ocean system for Unity HDRP.",
   "unity": "6000.0",
