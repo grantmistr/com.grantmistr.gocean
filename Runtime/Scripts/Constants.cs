@@ -9,9 +9,9 @@ namespace GOcean
 
     public class Constants
     {
-        public PerCameraData[] perCameraData = { new PerCameraData(true) };
-        public OnDemandData[] onDemandData = { new OnDemandData(true) };
-        public ConstantData[] constantData = { new ConstantData(true) };
+        public PerCameraData[] perCameraData = { PerCameraData.Default };
+        public OnDemandData[] onDemandData = { OnDemandData.Default };
+        public ConstantData[] constantData = { ConstantData.Default };
 
         private ComputeBuffer perCameraDataBuffer;
         private ComputeBuffer onDemandDataBuffer;
@@ -29,18 +29,18 @@ namespace GOcean
             public int validTerrainHeightmapMask;
             public int unused3;
 
-            public PerCameraData(bool init = true)
+            public static readonly PerCameraData Default = new PerCameraData()
             {
-                cascadeShadowSplits = Vector4.zero;
-                cameraPositionStepped = Vector4.zero;
-                cameraZRotation = 0f;
-                unused0 = 0f;
-                unused1 = 0f;
-                unused2 = 0f;
-                terrainLookupCoordOffset = Vector2Int.zero;
-                validTerrainHeightmapMask = 0;
-                unused3 = 0;
-            }
+                cascadeShadowSplits = Vector4.zero,
+                cameraPositionStepped = Vector4.zero,
+                cameraZRotation = 0f,
+                unused0 = 0f,
+                unused1 = 0f,
+                unused2 = 0f,
+                terrainLookupCoordOffset = Vector2Int.zero,
+                validTerrainHeightmapMask = 0,
+                unused3 = 0
+            };
 
             public void Update(CustomPassContext ctx, ComponentContainer components)
             {
@@ -98,19 +98,19 @@ namespace GOcean
             public float unused4;
             public float unused5;
 
-            public OnDemandData(bool init = true)
+            public static readonly OnDemandData Default = new OnDemandData()
             {
-                windDirection = Vector2.zero;
-                directionalInfluence = Vector2.zero;
-                windSpeed = 0f;
-                causticStrength = 0f;
-                lightRayStrength = 0f;
-                lightRayStrengthInverse = 0f;
-                waterHeight = 0f;
-                turbulence = 0f;
-                unused4 = 0f;
-                unused5 = 0f;
-            }
+                windDirection = Vector2.zero,
+                directionalInfluence = Vector2.zero,
+                windSpeed = 0f,
+                causticStrength = 0f,
+                lightRayStrength = 0f,
+                lightRayStrengthInverse = 0f,
+                waterHeight = 0f,
+                turbulence = 0f,
+                unused4 = 0f,
+                unused5 = 0f
+            };
 
             public void Update(ComponentContainer components)
             {
@@ -147,23 +147,23 @@ namespace GOcean
             public int unused9;
             public int unused10;
 
-            public ConstantData(bool init = true)
+            public static readonly ConstantData Default = new ConstantData()
             {
-                patchSize = Vector4.zero;
-                underwaterFogColor = Vector4.zero;
-                underwaterFogFadeDistance = 0f;
-                causticDistortion = 0f;
-                causticDefinition = 0f;
-                causticTiling = 0f;
-                causticFadeDepth = 0f;
-                causticAboveWaterFadeDistance = 0f;
-                unused6 = 0f;
-                unused7 = 0f;
-                spectrumTextureResolution = 0;
-                unused8 = 0;
-                unused9 = 0;
-                unused10 = 0;
-            }
+                patchSize = Vector4.zero,
+                underwaterFogColor = Vector4.zero,
+                underwaterFogFadeDistance = 0f,
+                causticDistortion = 0f,
+                causticDefinition = 0f,
+                causticTiling = 0f,
+                causticFadeDepth = 0f,
+                causticAboveWaterFadeDistance = 0f,
+                unused6 = 0f,
+                unused7 = 0f,
+                spectrumTextureResolution = 0,
+                unused8 = 0,
+                unused9 = 0,
+                unused10 = 0
+            };
 
             public void Update(ComponentContainer components)
             {
