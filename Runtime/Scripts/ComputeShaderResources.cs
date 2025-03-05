@@ -2,6 +2,14 @@ using UnityEngine;
 
 namespace GOcean
 {
+    public enum ComputeShaderIndex
+    {
+        spectrum = 0,
+        terrain = 1,
+        underwater = 2,
+        mesh = 3
+    }
+
     [CreateAssetMenu(fileName = RESOURCE_STRING, menuName = "GOcean/Compute Shader Resources", order = 1)]
     [System.Serializable]
     public class ComputeShaderResources : ScriptableObject

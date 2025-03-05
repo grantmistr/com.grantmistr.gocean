@@ -2,6 +2,15 @@ using UnityEngine;
 
 namespace GOcean
 {
+    public enum MaterialIndex
+    {
+        ocean = 0,
+        distantOcean = 1,
+        fullscreen = 2,
+        waterScreenMask = 3,
+        wireframe = 4
+    }
+
     [CreateAssetMenu(fileName = RESOURCE_STRING, menuName = "GOcean/Material Resources", order = 1)]
     [System.Serializable]
     public class MaterialResources : ScriptableObject

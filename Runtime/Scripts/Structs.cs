@@ -31,23 +31,6 @@ namespace GOcean
         _8192 = 8192
     }
 
-    public enum MaterialIndex
-    {
-        ocean = 0,
-        distantOcean = 1,
-        fullscreen = 2,
-        waterScreenMask = 3,
-        wireframe = 4
-    }
-
-    public enum ComputeShaderIndex
-    {
-        spectrum = 0,
-        terrain = 1,
-        underwater = 2,
-        mesh = 3
-    }
-
     [System.Serializable]
     public struct PowTwoVector4
     {
