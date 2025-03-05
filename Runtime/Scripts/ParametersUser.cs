@@ -8,7 +8,7 @@ namespace GOcean
     public class ParametersUser : ScriptableObject
     {
         public const string RESOURCE_STRING = "GOcean_DefaultOceanParameters";
-        public const int NUM_COMPONENTS = 11;
+        public const int NUM_COMPONENTS = ComponentContainer.NUM_COMPONENTS;
 
         [SerializeReference]
         public GenericParamsUser generic = new GenericParamsUser();
@@ -39,17 +39,17 @@ namespace GOcean
             {
                 return i switch
                 {
-                    0 => generic,
-                    1 => wind,
-                    2 => displacement,
-                    3 => surface,
-                    4 => foam,
-                    5 => terrain,
-                    6 => screen,
-                    7 => caustic,
-                    8 => underwater,
-                    9 => mesh,
-                    10 => physics,
+                    (int)ComponentIndices.generic => generic,
+                    (int)ComponentIndices.wind => wind,
+                    (int)ComponentIndices.displacement => displacement,
+                    (int)ComponentIndices.surface => surface,
+                    (int)ComponentIndices.foam => foam,
+                    (int)ComponentIndices.terrain => terrain,
+                    (int)ComponentIndices.screen => screen,
+                    (int)ComponentIndices.caustic => caustic,
+                    (int)ComponentIndices.underwater => underwater,
+                    (int)ComponentIndices.mesh => mesh,
+                    (int)ComponentIndices.physics => physics,
                     _ => throw new System.Exception("Invalid index.")
                 };
             }

@@ -615,21 +615,18 @@ namespace GOcean
             // keyboard stuff
             if (Event.current.type == EventType.KeyDown)
             {
-                if (selectedBuoyancyInfluences.Count > 0)
+                // del / backspace remove
+                if ((Event.current.keyCode == KeyCode.Backspace) || (Event.current.keyCode == KeyCode.Delete))
                 {
-                    // del / backspace remove
-                    if ((Event.current.keyCode == KeyCode.Backspace) || (Event.current.keyCode == KeyCode.Delete))
-                    {
-                        RemoveSelectedBuoyancyInfluences(floater);
-                        Event.current.Use();
-                    }
+                    RemoveSelectedBuoyancyInfluences(floater);
+                    Event.current.Use();
+                }
 
-                    // duplicate selected with CTRL+D
-                    else if (Event.current.control && (Event.current.keyCode == KeyCode.D))
-                    {
-                        DuplicateSelectedBuoyancyInfluences(floater);
-                        Event.current.Use();
-                    }
+                // duplicate selected with CTRL+D
+                else if (Event.current.control && (Event.current.keyCode == KeyCode.D))
+                {
+                    DuplicateSelectedBuoyancyInfluences(floater);
+                    Event.current.Use();
                 }
             }
 
