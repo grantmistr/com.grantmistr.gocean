@@ -41,13 +41,15 @@ namespace GOcean
 
         public void Initialize()
         {
+            diameter = 2f * radius;
+            volume = 4f * Mathf.PI * radius * radius;
             Ocean.OceanSamplers.Add(oceanSampler);
         }
 
         public void Initialize(Matrix4x4 localToWorldMatrix)
         {
             UpdateWorldPosition(localToWorldMatrix);
-            diameter = 2f * radius;
+            diameter = radius + radius;
             volume = 4f * Mathf.PI * radius * radius;
             Ocean.OceanSamplers.Add(oceanSampler);
         }
