@@ -2,7 +2,7 @@
 
 ## 1.1.3 (2025-03-)
 - Fix warnings on AsynGPUReadback
-- 
+- Light ray iterations user param
 
 ## 1.1.2 (2025-03-08)
 - Fix errors on floater creation

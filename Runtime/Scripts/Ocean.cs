@@ -484,7 +484,9 @@ namespace GOcean
         /// </summary>
         /// <param name="samplePosition"></param>
         /// <param name="iterations"></param>
-        /// <returns></returns>
+        /// <returns>
+        /// Ocean height and normal at sample position
+        /// </returns>
         public OceanSampleOutputData SampleOcean(Vector3 samplePosition, uint iterations = Physics.HEIGHT_SAMPLE_ITERATIONS)
         {
             return components.Physics.SampleOcean(samplePosition, iterations);
