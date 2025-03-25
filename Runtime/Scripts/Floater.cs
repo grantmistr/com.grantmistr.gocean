@@ -5,7 +5,7 @@ namespace GOcean
     [RequireComponent(typeof(Rigidbody))]
     public class Floater : MonoBehaviour
     {
-        public BuoyancyInfluence[] buoyancyInfluences;
+        public BuoyancyInfluence[] buoyancyInfluences = new BuoyancyInfluence[0];
         private Rigidbody rb;
         private float initialLinearDamping;
 

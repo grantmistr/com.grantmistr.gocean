@@ -120,6 +120,9 @@ namespace GOcean
                 case int i:
                     material.SetInt(id, i); // SetInteger throws error for some reason
                     break;
+                case uint i:
+                    material.SetInt(id, (int)i);
+                    break;
                 case float f:
                     material.SetFloat(id, f);
                     break;
@@ -270,6 +273,9 @@ namespace GOcean
                 case int i:
                     cs.SetInt(id, i);
                     break;
+                case uint i:
+                    cs.SetInt(id, (int)i);
+                    break;
                 case int[] ints:
                     cs.SetInts(id, ints);
                     break;
@@ -351,6 +357,9 @@ namespace GOcean
                     break;
                 case int i:
                     cs.SetInt(id, i);
+                    break;
+                case uint i:
+                    cs.SetInt(id, (int)i);
                     break;
                 case int[] ints:
                     cs.SetInts(id, ints);
@@ -469,6 +478,9 @@ namespace GOcean
                     break;
                 case int i:
                     Shader.SetGlobalInteger(id, i);
+                    break;
+                case uint i:
+                    Shader.SetGlobalInteger(id, (int)i);
                     break;
                 case float f:
                     Shader.SetGlobalFloat(id, f);

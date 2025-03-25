@@ -305,6 +305,8 @@ namespace GOcean
         [Tooltip("Light rays fade in from camera near clip plane.")]
         [Min(1f)]
         public float lightRayFadeInDistance = 1f;
+        [Range(1, 32)]
+        public uint sliceCount = 16;
         [Min(1f)]
         public float maxSliceDepth = 80f;
         [Min(0.01f)]

@@ -5,14 +5,15 @@
 #define PI 3.1415926538
 #endif
 
-#define TAU PI * 2.0
+#define TAU 6.28318530718
 #define SQRT_2 1.4142135624
 #define ONE_OVER_SQRT_2 0.70710678118
 
 const static float3x3 M_3x3_identity = {
     1, 0, 0,
     0, 0, 1,
-    0, 1, 0 };
+    0, 1, 0
+};
 
 float Random(float2 uv)
 {

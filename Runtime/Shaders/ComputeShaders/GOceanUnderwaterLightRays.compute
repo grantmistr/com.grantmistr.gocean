@@ -42,8 +42,8 @@ float4  _PatchHighestWaveCount, _PatchLowestWaveCount;
 float   _MaxSliceDepth, _MinSliceDepth, _LightRayFadeInDistance, _LightRayTiling, _LightRayDefinition, _LightRayShadowMultiplier,
         _ScreenWaterFadeSpeed, _ScreenWaterTiling;
 
-const static uint slices = 8;
-const static float sliceStep = 1.0 / (float) slices;
+uint    _SliceCount;
+
 const static float causticSourceSpectrumSlice = 9.0;
 
 void CalculateScreenWater(float2 positionCS, uint3 ID, bool underwaterMask, inout uint oceanScreenTextureSample, out float screenWater)
@@ -151,15 +151,18 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
         }
     }
     
+    float sliceStep = 1.0 / (float) _SliceCount;
+    
     float sum = 0.0;
-    for (uint i = 0; i < slices; i++)
+    for (uint i = 0; i < _SliceCount; i++)
     {
         float slice = (float) i;
-        float normalizedSlice = slice / (float) slices;
+        float normalizedSlice = slice / (float) _SliceCount;
         
-        cd.viewDepth = Random(cd.positionNDC + slice);
-        cd.viewDepth *= sliceStep;
-        cd.viewDepth += normalizedSlice;
+        cd.viewDepth = Random(cd.positionNDC + slice); // 0 - 1
+        cd.viewDepth *= sliceStep; // 0 - sliceStep
+        cd.viewDepth += normalizedSlice; // (sliceStep * slice) - (sliceStep * (slice + 1))
+        cd.viewDepth *= cd.viewDepth; // exponential falloff
         cd.viewDepth *= cd.viewDepth;
         cd.viewDepth *= _MaxSliceDepth;
         
@@ -209,7 +212,7 @@ void LightRays(uint3 threadID : SV_DispatchThreadID)
         sum += caustic;
     }
     
-    sum /= (float) slices;
+    sum /= (float) _SliceCount;
     sum = lerp(_LightRayStrengthInverse, sum, saturate(dot(L.forward, float3(0.0, -1.0, 0.0))));
     sum = pow(saturate(sum), _LightRayDefinition);
     

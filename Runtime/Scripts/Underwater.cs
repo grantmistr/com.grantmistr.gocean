@@ -1,3 +1,4 @@
+using Codice.CM.Client.Differences.Graphic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
@@ -6,6 +7,14 @@ namespace GOcean
 {
     using PropIDs = ShaderPropertyIDs;
     using static Helper;
+
+    public enum SliceCount
+    {
+        _4 = 4,
+        _8 = 8,
+        _16 = 16,
+        _32 = 32
+    }
 
     public class Underwater : Component
     {
@@ -32,6 +41,8 @@ namespace GOcean
         public float lightRayStrengthInverse;
         [ShaderParam("_LightRayFadeInDistance")]
         public float lightRayFadeInDistance;
+        [ShaderParam("_SliceCount")]
+        public uint sliceCount;
         [ShaderParam("_MaxSliceDepth")]
         public float maxSliceDepth;
         [ShaderParam("_MinSliceDepth")]
@@ -121,7 +132,7 @@ namespace GOcean
             lightRayStrengthFactor = CalculateLightRayStrengthFactor(lightRayDefinition);
             lightRayStrength = CalculateLightRayStrength(ocean.WindSpeed, lightRayDefinition, lightRayStrengthFactor);
             lightRayStrengthInverse = CalculateLightRayStrengthInverse(lightRayStrength, lightRayDefinition);
-
+            sliceCount = u.sliceCount;
             minSliceDepth = CalculateMinSliceDepth(u);
             maxSliceDepth = CalculateMaxSliceDepth(u, minSliceDepth);
         }

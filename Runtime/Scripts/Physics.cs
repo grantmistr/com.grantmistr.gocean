@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Collections;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace GOcean
@@ -92,7 +93,9 @@ namespace GOcean
             {
                 if (spectrumTextureReadback[i] != null)
                 {
-                    spectrumTextureReadback[i].SetPixelData<Vector4>(request.GetData<Vector4>(i), 0);
+                    NativeArray<Vector4> requestData = request.GetData<Vector4>(i);
+                    spectrumTextureReadback[i].SetPixelData<Vector4>(requestData, 0);
+                    requestData.Dispose();
                 }
             }
         }

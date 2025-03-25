@@ -196,7 +196,7 @@ Material:
     - _AlphaSrcBlend: 1
     - _Anisotropy: 0
     - _BlendMode: 0
-    - _CausticAboveWaterFadeDistance: 20
+    - _CausticAboveWaterFadeDistance: 10
     - _CausticDefinition: 10
     - _CausticDistortion: 0.002
     - _CausticFadeDepth: 400
@@ -242,7 +242,7 @@ Material:
     - _IridescenceThickness: 1
     - _LightRayDefinition: 1.25
     - _LightRayFadeInDistance: 1
-    - _LightRayShadowMultiplier: 0.5
+    - _LightRayShadowMultiplier: 0
     - _LightRayTiling: 1
     - _LinkDetailsWithBase: 1
     - _MaterialID: 1

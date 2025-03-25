@@ -616,7 +616,7 @@ namespace GOcean
             if (Event.current.type == EventType.KeyDown)
             {
                 // del / backspace remove
-                if ((Event.current.keyCode == KeyCode.Backspace) || (Event.current.keyCode == KeyCode.Delete))
+                if (((Event.current.keyCode == KeyCode.Delete) || (Event.current.keyCode == KeyCode.Backspace)) && !EditorGUIUtility.editingTextField)
                 {
                     RemoveSelectedBuoyancyInfluences(floater);
                     Event.current.Use();

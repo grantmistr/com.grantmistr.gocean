@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.3 (2025-03-)
+- Fix warnings on AsynGPUReadback
+- 
+
+## 1.1.2 (2025-03-08)
+- Fix errors on floater creation
+
+## 1.1.1 (2025-03-07)
+- Fix for deleting buoyancy influences in editor; no deletion when editing text field
+
 ## 1.1.0 (2025-03-05)
 - Proper buoyancy physics; floater component that interacts with rigidbody
 - Public method for sampling ocean
