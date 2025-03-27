@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace GOcean
 {
@@ -275,11 +274,11 @@ namespace GOcean
             base.SetShaderParams();
         }
 
-        public void UpdateMesh(CustomPassContext ctx)
+        public void UpdateMesh(CommandBuffer cmd, Plane[] frustumPlanes, RTHandle cameraDepthBuffer, Vector3 cameraPosition)
         {
-            UpdateBounds(ctx.hdCamera.camera);
+            UpdateBounds(cameraPosition);
             
-            drawMesh = GeometryUtility.TestPlanesAABB(ctx.hdCamera.frustum.planes, meshBoundsHDRP);
+            drawMesh = GeometryUtility.TestPlanesAABB(frustumPlanes, meshBoundsHDRP);
 
             if (!drawMesh)
             {
@@ -287,27 +286,27 @@ namespace GOcean
             }
 
             // reset indirect args buffer counter values to 0
-            ctx.cmd.DispatchCompute(ocean.MeshCS, kernelIDs.ResetIndirectArgsBuffer, 1, 1, 1);
+            cmd.DispatchCompute(ocean.MeshCS, kernelIDs.ResetIndirectArgsBuffer, 1, 1, 1);
 
             // set compute params
-            ctx.cmd.SetComputeTextureParam(ocean.MeshCS, kernelIDs.FillVertexBuffer, PropIDs.cameraDepthTexture, ctx.cameraDepthBuffer);
+            cmd.SetComputeTextureParam(ocean.MeshCS, kernelIDs.FillVertexBuffer, PropIDs.cameraDepthTexture, cameraDepthBuffer);
 
             // dispatch fill sub chunk buffer kernel
-            ctx.cmd.DispatchCompute(ocean.MeshCS, kernelIDs.FillSubChunkBuffer, threadGroups.FillSubChunkBuffer);
+            cmd.DispatchCompute(ocean.MeshCS, kernelIDs.FillSubChunkBuffer, threadGroups.FillSubChunkBuffer);
 
             // dispatch triangle fill kernel
-            ctx.cmd.DispatchCompute(ocean.MeshCS, kernelIDs.FillVertexBuffer, indirectArgsBuffer, IndirectArgsOffsetsByte.TRIANGLE_FILL);
+            cmd.DispatchCompute(ocean.MeshCS, kernelIDs.FillVertexBuffer, indirectArgsBuffer, IndirectArgsOffsetsByte.TRIANGLE_FILL);
 
             // add vertices for underwater mask
-            ctx.cmd.DispatchCompute(ocean.MeshCS, kernelIDs.FillUnderwaterMaskVertices, 1, 1, 1);
+            cmd.DispatchCompute(ocean.MeshCS, kernelIDs.FillUnderwaterMaskVertices, 1, 1, 1);
         }
 
-        public void DrawWireframe(CustomPassContext ctx)
+        public void DrawWireframe(CommandBuffer cmd, RTHandle cameraColorBuffer)
         {
             if (drawMesh && drawWireframe)
             {
-                CoreUtils.SetRenderTarget(ctx.cmd, ctx.cameraColorBuffer);
-                ctx.cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.WireframeM, 0, MeshTopology.Triangles, indirectArgsBuffer, (int)IndirectArgsOffsetsByte.TOTAL_VERTEX_COUNT);
+                CoreUtils.SetRenderTarget(cmd, cameraColorBuffer);
+                cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.WireframeM, 0, MeshTopology.Triangles, indirectArgsBuffer, (int)IndirectArgsOffsetsByte.TOTAL_VERTEX_COUNT);
             }
         }
 
@@ -319,10 +318,10 @@ namespace GOcean
             }
         }
 
-        private void UpdateBounds(Camera camera)
+        private void UpdateBounds(Vector3 cameraPosition)
         {
             meshBounds.center = new Vector3(ocean.CameraPositionStepped.x, components.Generic.waterHeight, ocean.CameraPositionStepped.y);
-            meshBoundsHDRP.center = meshBounds.center - camera.transform.position;
+            meshBoundsHDRP.center = meshBounds.center - cameraPosition;
         }
 
         public void UpdateBounds(float maxAmplitude)

@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace GOcean
 {
@@ -51,15 +50,15 @@ namespace GOcean
             causticAboveWaterFadeDistance = u.causticAboveWaterFadeDistance;
         }
 
-        public void DrawOpaqueCaustic(CustomPassContext ctx)
+        public void DrawOpaqueCaustic(CommandBuffer cmd, MaterialPropertyBlock propertyBlock, RTHandle cameraColorBuffer, RTHandle cameraDepthBuffer)
         {
-            ctx.propertyBlock.SetTexture(PropIDs.cameraDepthTexture, ctx.cameraDepthBuffer);
+            propertyBlock.SetTexture(PropIDs.cameraDepthTexture, cameraDepthBuffer);
             //ctx.propertyBlock.SetTexture(PropIDs.temporaryColorTexture, components.Generic.temporaryColorTexture);
             //ctx.propertyBlock.SetTexture(PropIDs.waterDepthTexture, components.Generic.waterDepthTexture);
             //ctx.propertyBlock.SetTexture(PropIDs.oceanScreenTexture, components.Screen.screenTexture);
 
-            CoreUtils.SetRenderTarget(ctx.cmd, ctx.cameraColorBuffer, ClearFlag.None);
-            CoreUtils.DrawFullScreen(ctx.cmd, ocean.FullscreenM, ctx.propertyBlock, shaderPassOpaqueCaustic);
+            CoreUtils.SetRenderTarget(cmd, cameraColorBuffer, ClearFlag.None);
+            CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassOpaqueCaustic);
         }
 
         public float CalculateCausticStrength(float windSpeed, float causticStrengthUser)

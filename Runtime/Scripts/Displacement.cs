@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Rendering;
 using Unity.Mathematics;
 using System.Threading.Tasks;
@@ -210,23 +209,23 @@ namespace GOcean
             }
         }
 
-        public void UpdateSpectrumTexture(CustomPassContext ctx)
+        public void UpdateSpectrumTexture(CommandBuffer cmd)
         {
-            ctx.cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.UpdateInitialSpectrum, threadGroups.Main);
-            ctx.cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.UpdateInitialSpectrumConjugate, threadGroups.Main);
-            ctx.cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.UpdateSpectrum, threadGroups.Main);
+            cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.UpdateInitialSpectrum, threadGroups.Main);
+            cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.UpdateInitialSpectrumConjugate, threadGroups.Main);
+            cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.UpdateSpectrum, threadGroups.Main);
 
-            ctx.cmd.SetComputeIntParam(ocean.SpectrumCS, PropIDs.IFFTDirection, 0);
-            ctx.cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.IFFT, threadGroups.IFFT);
+            cmd.SetComputeIntParam(ocean.SpectrumCS, PropIDs.IFFTDirection, 0);
+            cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.IFFT, threadGroups.IFFT);
             
-            ctx.cmd.SetComputeIntParam(ocean.SpectrumCS, PropIDs.IFFTDirection, 1);
-            ctx.cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.IFFT, threadGroups.IFFT);
+            cmd.SetComputeIntParam(ocean.SpectrumCS, PropIDs.IFFTDirection, 1);
+            cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.IFFT, threadGroups.IFFT);
             
-            ctx.cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.AssembleMaps, threadGroups.Main);
-            ctx.cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.SurfaceData, threadGroups.Main);
-            ctx.cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.MergeSurfaceData, threadGroups.MergeSurfaceData);
+            cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.AssembleMaps, threadGroups.Main);
+            cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.SurfaceData, threadGroups.Main);
+            cmd.DispatchCompute(ocean.SpectrumCS, kernelIDs.MergeSurfaceData, threadGroups.MergeSurfaceData);
             
-            ctx.cmd.GenerateMips(spectrumTexture);
+            cmd.GenerateMips(spectrumTexture);
         }
 
         private void CalculatePatchLowHighWaveCounts(float lowWaveCutoff, float highWaveCutoff, float reduceWaves, Vector4 patchSize, out Vector4 patchLowestWaveCount, out Vector4 patchHighestWaveCount)

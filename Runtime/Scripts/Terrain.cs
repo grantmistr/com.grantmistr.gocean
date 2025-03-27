@@ -1,6 +1,5 @@
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Rendering;
 
 namespace GOcean
 {
@@ -213,8 +212,8 @@ namespace GOcean
         /// <summary>
         /// Actually do compute dispatches.
         /// </summary>
-        /// <param name="ctx"></param>
-        public void UpdateDirectionalInfluenceAndComputeTerrainTextureArray(CustomPassContext ctx)
+        /// <param name="cmd"></param>
+        public void UpdateDirectionalInfluenceAndComputeTerrainTextureArray(CommandBuffer cmd)
         {
             if (!hasTerrain)
             {
@@ -226,19 +225,19 @@ namespace GOcean
                 if (needsDirectionalInfluenceCopy)
                 {
                     threadGroups.UpdateDirectionalInfluence(threadGroupSizes, threadGroups.main.z, shoreWaveCount);
-                    ctx.cmd.SetComputeIntParam(ocean.TerrainCS, PropIDs.sliceUpdateCount, threadGroups.main.z);
-                    ctx.cmd.SetComputeIntParams(ocean.TerrainCS, PropIDs.slice2DOffsetDirection, terrainCoordDelta.x, terrainCoordDelta.y);
-                    ctx.cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.CopyDirectionalInfluence, threadGroups.directionalInfluence);
+                    cmd.SetComputeIntParam(ocean.TerrainCS, PropIDs.sliceUpdateCount, threadGroups.main.z);
+                    cmd.SetComputeIntParams(ocean.TerrainCS, PropIDs.slice2DOffsetDirection, terrainCoordDelta.x, terrainCoordDelta.y);
+                    cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.CopyDirectionalInfluence, threadGroups.directionalInfluence);
 
                     needsDirectionalInfluenceCopy = false;
                 }
 
-                ctx.cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.DirectionalInfluence, threadGroups.directionalInfluence);
-                ctx.cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.ComputeShoreWaves, threadGroups.main);
+                cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.DirectionalInfluence, threadGroups.directionalInfluence);
+                cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.ComputeShoreWaves, threadGroups.main);
             }
         }
 
-        private void ComputeUpdatedTerrainData(CustomPassContext ctx, Vector2Int terrainCoord, Vector2Int previousTerrainCoord)
+        private void ComputeUpdatedTerrainData(CommandBuffer cmd, Vector2Int terrainCoord, Vector2Int previousTerrainCoord)
         {
             // terrains might not have GOceanTerrainComponent, so can still have 0 terrain heightmaps that need update
             needsComputeDispatch = false;
@@ -302,19 +301,19 @@ namespace GOcean
                         // if invalid source slice, copy terrain heightmap texture from terrain array and reset shore wave array texture slice to 0
                         if (InvalidTerrainSlice(sourceSlice2D))
                         {
-                            ctx.cmd.SetComputeTextureParam(ocean.TerrainCS, kernelIDs.UpdateTexturesResetFoam, PropIDs.terrainHeightmapTexture, terrainArray[id].terrainData.heightmapTexture);
-                            ctx.cmd.SetComputeIntParam(ocean.TerrainCS, PropIDs.slice, slice);
-                            ctx.cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.UpdateTexturesResetFoam, threadGroups.main.x, threadGroups.main.y, 1);
+                            cmd.SetComputeTextureParam(ocean.TerrainCS, kernelIDs.UpdateTexturesResetFoam, PropIDs.terrainHeightmapTexture, terrainArray[id].terrainData.heightmapTexture);
+                            cmd.SetComputeIntParam(ocean.TerrainCS, PropIDs.slice, slice);
+                            cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.UpdateTexturesResetFoam, threadGroups.main.x, threadGroups.main.y, 1);
                         }
 
                         // if valid, copy shore wave source slice to new slice
                         else
                         {
                             int sourceSlice = sourceSlice2D.x + sourceSlice2D.y * TERRAIN_HEIGHTMAP_ARRAY_RESOLUTION;
-                            ctx.cmd.SetComputeTextureParam(ocean.TerrainCS, kernelIDs.UpdateTexturesCopyFoam, PropIDs.terrainHeightmapTexture, terrainArray[id].terrainData.heightmapTexture);
-                            ctx.cmd.SetComputeIntParam(ocean.TerrainCS, PropIDs.slice, slice);
-                            ctx.cmd.SetComputeIntParam(ocean.TerrainCS, PropIDs.sourceSlice, sourceSlice);
-                            ctx.cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.UpdateTexturesCopyFoam, threadGroups.main.x, threadGroups.main.y, 1);
+                            cmd.SetComputeTextureParam(ocean.TerrainCS, kernelIDs.UpdateTexturesCopyFoam, PropIDs.terrainHeightmapTexture, terrainArray[id].terrainData.heightmapTexture);
+                            cmd.SetComputeIntParam(ocean.TerrainCS, PropIDs.slice, slice);
+                            cmd.SetComputeIntParam(ocean.TerrainCS, PropIDs.sourceSlice, sourceSlice);
+                            cmd.DispatchCompute(ocean.TerrainCS, kernelIDs.UpdateTexturesCopyFoam, threadGroups.main.x, threadGroups.main.y, 1);
                         }
 
                         needsComputeDispatch = true;
@@ -322,22 +321,23 @@ namespace GOcean
                 }
             }
 
-            ctx.cmd.SetBufferData(targetSliceIndicesBuffer, targetSliceIndices);
+            cmd.SetBufferData(targetSliceIndicesBuffer, targetSliceIndices);
         }
 
         /// <summary>
         /// Compute and setup data needed to dispatch and update terrain shore wave texture. Do this before updating
         /// constant buffer, because this updates ValidTerrainHeightmapMask and TerrainLookupCoordOffset.
         /// </summary>
-        /// <param name="ctx"></param>
-        public void UpdateTerrainData(CustomPassContext ctx)
+        /// <param name="cmd"></param>
+        /// <param name="cameraPosition"></param>
+        public void UpdateTerrainData(CommandBuffer cmd, Vector3 cameraPosition)
         {
             if (!hasTerrain)
             {
                 return;
             }
 
-            Vector2Int terrainCoord = GetTerrainLookupCoord(ctx.hdCamera.camera.transform.position);
+            Vector2Int terrainCoord = GetTerrainLookupCoord(cameraPosition);
 
             // vec2 to subtract from terrain coord in shader to get proper 2D slice in [0,0] to [2,2] range
             terrainLookupCoordOffset = new Vector2Int(terrainCoord.x - 1, terrainCoord.y - 1);
@@ -361,7 +361,7 @@ namespace GOcean
                 return;
             }
 
-            ComputeUpdatedTerrainData(ctx, terrainCoord, previousTerrainCoord);
+            ComputeUpdatedTerrainData(cmd, terrainCoord, previousTerrainCoord);
             previousTerrainCoord = terrainCoord;
 
             // only need to copy directional influence if also need compute dispatch

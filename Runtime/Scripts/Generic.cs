@@ -321,9 +321,9 @@ namespace GOcean
             helperCS.Dispatch(kernel, threadGroups);
         }
 
-        public void SetRTHandleSystemReferenceSize(CustomPassContext ctx)
+        public void SetRTHandleSystemReferenceSize(int width, int height)
         {
-            rtHandleSystem.SetReferenceSize(ctx.hdCamera.actualWidth, ctx.hdCamera.actualHeight);
+            rtHandleSystem.SetReferenceSize(width, height);
         }
 
         public void DrawWaterForward()
@@ -336,28 +336,28 @@ namespace GOcean
             }
         }
             
-        public void DrawWaterForward(CustomPassContext ctx)
+        public void DrawWaterForward(CommandBuffer cmd)
         {
-            //CoreUtils.SetRenderTarget(ctx.cmd, ctx.cameraColorBuffer, waterDepthTexture, ClearFlag.None);
-            CoreUtils.DrawFullScreen(ctx.cmd, ocean.DistantOceanM, null, shaderPassForwardDistantOcean);
+            //CoreUtils.SetRenderTarget(cmd, cameraColorBuffer, waterDepthTexture, ClearFlag.None);
+            CoreUtils.DrawFullScreen(cmd, ocean.DistantOceanM, null, shaderPassForwardDistantOcean);
 
             if (components.Mesh.DrawMesh)
             {
-                ctx.cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.OceanM, shaderPassForwardOcean, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectStartCommand.VERTEX_COUNT);
+                cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.OceanM, shaderPassForwardOcean, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectStartCommand.VERTEX_COUNT);
             }
         }
 
-        public void TransferFinal(CustomPassContext ctx)
+        public void TransferFinal(CommandBuffer cmd, RTHandle cameraColorBuffer, RTHandle cameraDepthBuffer, MaterialPropertyBlock propertyBlock)
         {
             if (waterWritesToDepth)
             {
-                CoreUtils.SetRenderTarget(ctx.cmd, ctx.cameraColorBuffer, ctx.cameraDepthBuffer);
-                CoreUtils.DrawFullScreen(ctx.cmd, ocean.FullscreenM, ctx.propertyBlock, shaderPassTransferFinalWriteDepth);
+                CoreUtils.SetRenderTarget(cmd, cameraColorBuffer, cameraDepthBuffer);
+                CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassTransferFinalWriteDepth);
             }
             else
             {
-                CoreUtils.SetRenderTarget(ctx.cmd, ctx.cameraColorBuffer);
-                CoreUtils.DrawFullScreen(ctx.cmd, ocean.FullscreenM, ctx.propertyBlock, shaderPassTransferFinal);
+                CoreUtils.SetRenderTarget(cmd, cameraColorBuffer);
+                CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassTransferFinal);
             }
         }
     }

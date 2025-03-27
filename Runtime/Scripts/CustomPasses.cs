@@ -169,13 +169,13 @@ namespace GOcean
 
         protected override void Execute(CustomPassContext ctx)
         {
-            components.Generic.SetRTHandleSystemReferenceSize(ctx);
-            components.Terrain.UpdateTerrainData(ctx);
+            components.Generic.SetRTHandleSystemReferenceSize(ctx.hdCamera.actualWidth, ctx.hdCamera.actualHeight);
+            components.Terrain.UpdateTerrainData(ctx.cmd, ctx.hdCamera.camera.transform.position);
             constants.UpdatePerCameraData(ctx, components);
-            components.Displacement.UpdateSpectrumTexture(ctx);
-            components.Terrain.UpdateDirectionalInfluenceAndComputeTerrainTextureArray(ctx);
-            components.Mesh.UpdateMesh(ctx);
-            components.Screen.DrawUnderwaterMask(ctx);
+            components.Displacement.UpdateSpectrumTexture(ctx.cmd);
+            components.Terrain.UpdateDirectionalInfluenceAndComputeTerrainTextureArray(ctx.cmd);
+            components.Mesh.UpdateMesh(ctx.cmd, ctx.hdCamera.frustum.planes, ctx.cameraDepthBuffer, ctx.hdCamera.camera.transform.position);
+            components.Screen.DrawUnderwaterMask(ctx.cmd, ctx.propertyBlock, ctx.hdCamera.camera.transform.position);
         }
     }
 
@@ -200,11 +200,10 @@ namespace GOcean
 
         protected override void Execute(CustomPassContext ctx)
         {
-            components.Caustic.DrawOpaqueCaustic(ctx);
-            components.Underwater.DrawOpaqueUnderwaterFog(ctx);
-            //components.Screen.DrawLightRaysScreenWater(ctx);
-            components.Underwater.ComputeLightRaysScreenWater(ctx);
-            components.Screen.BlurScreenTexture(ctx);
+            components.Caustic.DrawOpaqueCaustic(ctx.cmd, ctx.propertyBlock, ctx.cameraColorBuffer, ctx.cameraDepthBuffer);
+            components.Underwater.DrawOpaqueUnderwaterFog(ctx.cmd, ctx.propertyBlock);
+            components.Underwater.ComputeLightRaysScreenWater(ctx.cmd, ctx.cameraDepthBuffer);
+            components.Screen.BlurScreenTexture(ctx.cmd, ctx.propertyBlock);
         }
     }
 
@@ -229,9 +228,9 @@ namespace GOcean
 
         protected override void Execute(CustomPassContext ctx)
         {
-            components.Generic.DrawWaterForward(ctx);
+            components.Generic.DrawWaterForward(ctx.cmd);
 #if UNITY_EDITOR
-            components.Mesh.DrawWireframe(ctx);
+            components.Mesh.DrawWireframe(ctx.cmd, ctx.cameraColorBuffer);
 #endif
         }
     }
@@ -257,8 +256,8 @@ namespace GOcean
 
         protected override void Execute(CustomPassContext ctx)
         {
-            components.Underwater.DrawUnderwaterTint(ctx);
-            components.Generic.TransferFinal(ctx);
+            components.Underwater.DrawUnderwaterTint(ctx.cmd, ctx.propertyBlock);
+            components.Generic.TransferFinal(ctx.cmd, ctx.cameraColorBuffer, ctx.cameraDepthBuffer, ctx.propertyBlock);
         }
     }
 }

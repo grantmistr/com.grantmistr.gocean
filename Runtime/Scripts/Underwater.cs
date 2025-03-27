@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace GOcean
 {
@@ -151,36 +150,36 @@ namespace GOcean
             shaderPassUnderwaterTintWriteDepth = ocean.FullscreenM.FindPass("UnderwaterTintWriteDepth");
         }
 
-        public void DrawOpaqueUnderwaterFog(CustomPassContext ctx)
+        public void DrawOpaqueUnderwaterFog(CommandBuffer cmd, MaterialPropertyBlock propertyBlock)
         {
-            CoreUtils.DrawFullScreen(ctx.cmd, ocean.FullscreenM, ctx.propertyBlock, shaderPassOpaqueUnderwaterFog);
+            CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassOpaqueUnderwaterFog);
         }
 
-        public void DrawUnderwaterTint(CustomPassContext ctx)
+        public void DrawUnderwaterTint(CommandBuffer cmd, MaterialPropertyBlock propertyBlock)
         {
-            //ctx.propertyBlock.SetTexture(PropIDs.oceanScreenTexture, components.Screen.screenTexture);
-            //ctx.propertyBlock.SetTexture(PropIDs.temporaryColorTexture, components.Generic.temporaryColorTexture);
+            //propertyBlock.SetTexture(PropIDs.oceanScreenTexture, components.Screen.screenTexture);
+            //propertyBlock.SetTexture(PropIDs.temporaryColorTexture, components.Generic.temporaryColorTexture);
 
             if (components.Generic.waterWritesToDepth)
             {
-                ctx.propertyBlock.SetTexture(PropIDs.waterDepthTexture, components.Generic.waterDepthTexture);
-                //ctx.propertyBlock.SetTexture(PropIDs.temporaryDepthTexture, components.Generic.temporaryDepthTexture);
+                propertyBlock.SetTexture(PropIDs.waterDepthTexture, components.Generic.waterDepthTexture);
+                //propertyBlock.SetTexture(PropIDs.temporaryDepthTexture, components.Generic.temporaryDepthTexture);
 
-                CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.Depth);
-                CoreUtils.DrawFullScreen(ctx.cmd, ocean.FullscreenM, ctx.propertyBlock, shaderPassUnderwaterTintWriteDepth);
+                CoreUtils.SetRenderTarget(cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.Depth);
+                CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassUnderwaterTintWriteDepth);
             }
             else
             {
-                CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryColorTexture, ClearFlag.None);
-                CoreUtils.DrawFullScreen(ctx.cmd, ocean.FullscreenM, ctx.propertyBlock, shaderPassUnderwaterTint);
+                CoreUtils.SetRenderTarget(cmd, components.Generic.temporaryColorTexture, ClearFlag.None);
+                CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassUnderwaterTint);
             }
         }
 
-        public void ComputeLightRaysScreenWater(CustomPassContext ctx)
+        public void ComputeLightRaysScreenWater(CommandBuffer cmd, RTHandle cameraDepthBuffer)
         {
             threadGroups.UpdateUnderwaterLightRays(rtHandleSystem.rtHandleProperties.currentViewportSize, components.Underwater.threadGroupSizes);
-            ctx.cmd.SetComputeTextureParam(ocean.UnderwaterCS, kernelIDs.LightRays, PropIDs.cameraDepthTexture, ctx.cameraDepthBuffer);
-            ctx.cmd.DispatchCompute(ocean.UnderwaterCS, kernelIDs.LightRays, threadGroups.LightRays);
+            cmd.SetComputeTextureParam(ocean.UnderwaterCS, kernelIDs.LightRays, PropIDs.cameraDepthTexture, cameraDepthBuffer);
+            cmd.DispatchCompute(ocean.UnderwaterCS, kernelIDs.LightRays, threadGroups.LightRays);
         }
 
         private float CalculateMinSliceDepth(UnderwaterParamsUser u)

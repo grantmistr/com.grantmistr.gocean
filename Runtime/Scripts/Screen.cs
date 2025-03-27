@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Experimental.Rendering;
 
 namespace GOcean
@@ -94,77 +93,77 @@ namespace GOcean
         /// blur them with the Screen Texture as target.
         /// </summary>
         /// <param name="ctx"></param>
-        public void DrawUnderwaterMask(CustomPassContext ctx)
+        public void DrawUnderwaterMask(CommandBuffer cmd, MaterialPropertyBlock propertyBlock, Vector3 cameraPosition)
         {
-            float delta = ctx.hdCamera.camera.transform.position.y - components.Generic.waterHeight;
+            float delta = cameraPosition.y - components.Generic.waterHeight;
             bool deltaCheck = Mathf.Abs(delta) < components.Displacement.maxAmplitude;
 
-            //ctx.propertyBlock.SetTexture(PropIDs.temporaryColorTexture, components.Generic.temporaryColorTexture);
+            //propertyBlock.SetTexture(PropIDs.temporaryColorTexture, components.Generic.temporaryColorTexture);
 
             if (components.Mesh.DrawMesh)
             {
                 if (deltaCheck)
                 {
                     // set RT to temp color tex and water depth tex, clear all
-                    CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.All);
+                    CoreUtils.SetRenderTarget(cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.All);
 
                     // distant water depth writes G; stencil ref 4, write mask 4
-                    CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, null, shaderPassDepthOnlyDistantOcean);
+                    CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, null, shaderPassDepthOnlyDistantOcean);
 
                     // water mesh double sided pass; writes RG; stencil ref 3, write mask 3
-                    ctx.cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.WaterScreenMaskM, shaderPassScreenMask, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectArgsOffsetsByte.VERTEX_COUNT);
+                    cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.WaterScreenMaskM, shaderPassScreenMask, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectArgsOffsetsByte.VERTEX_COUNT);
 
                     // underwater pyramid; writes R; stencil ref 1, readmask 1, writemask 1, comp greater, pass replace
-                    ctx.cmd.DrawProcedural(Matrix4x4.identity, ocean.WaterScreenMaskM, shaderPassScreenMaskUnderwaterPyramid, MeshTopology.Triangles, Mesh.UNDERWATER_MASK_VERTEX_COUNT);
+                    cmd.DrawProcedural(Matrix4x4.identity, ocean.WaterScreenMaskM, shaderPassScreenMaskUnderwaterPyramid, MeshTopology.Triangles, Mesh.UNDERWATER_MASK_VERTEX_COUNT);
                 }
                 else
                 {
                     // set RT to temp color tex and water depth tex
-                    CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.None);
+                    CoreUtils.SetRenderTarget(cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.None);
 
                     // clear; R set to 0 or 1 depending on if above or below water
-                    ctx.propertyBlock.SetFloat(PropIDs.clearValue, delta > 0f ? 0f : 1f);
-                    CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, ctx.propertyBlock, shaderPassClear);
+                    propertyBlock.SetFloat(PropIDs.clearValue, delta > 0f ? 0f : 1f);
+                    CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, propertyBlock, shaderPassClear);
 
                     // distant water depth writes G; stencil ref 4, write mask 4
-                    CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, null, shaderPassDepthOnlyDistantOcean);
+                    CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, null, shaderPassDepthOnlyDistantOcean);
 
                     // water mesh depth stencil writes G; stencil ref 2, write mask 2
-                    ctx.cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.WaterScreenMaskM, shaderPassDepthOnlyOcean, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectArgsOffsetsByte.VERTEX_COUNT);
+                    cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.WaterScreenMaskM, shaderPassDepthOnlyOcean, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectArgsOffsetsByte.VERTEX_COUNT);
                 }
             }
             else
             {
                 // set RT to temp color tex and water depth tex
-                CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.None);
+                CoreUtils.SetRenderTarget(cmd, components.Generic.temporaryColorTexture, components.Generic.waterDepthTexture, ClearFlag.None);
 
                 // clear; R set to 0 or 1 depending on if above or below water
-                ctx.propertyBlock.SetFloat(PropIDs.clearValue, delta > 0f ? 0f : 1f);
-                CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, ctx.propertyBlock, shaderPassClear);
+                propertyBlock.SetFloat(PropIDs.clearValue, delta > 0f ? 0f : 1f);
+                CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, propertyBlock, shaderPassClear);
 
                 // distant water depth writes G; stencil ref 4, write mask 4
-                CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, null, shaderPassDepthOnlyDistantOcean);
+                CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, null, shaderPassDepthOnlyDistantOcean);
             }
 
             // set RT to screen tex and water depth tex
-            CoreUtils.SetRenderTarget(ctx.cmd, screenTexture, components.Generic.waterDepthTexture, ClearFlag.None);
+            CoreUtils.SetRenderTarget(cmd, screenTexture, components.Generic.waterDepthTexture, ClearFlag.None);
 
             // clear ~ cached time bits
-            CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, null, shaderPassClearMasks);
+            CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, null, shaderPassClearMasks);
 
             // encode bit masks and fill holes
-            CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, null, shaderPassEncodeMasks);
+            CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, null, shaderPassEncodeMasks);
         }
 
-        public void BlurScreenTexture(CustomPassContext ctx)
+        public void BlurScreenTexture(CommandBuffer cmd, MaterialPropertyBlock propertyBlock)
         {
             // horizontal blur; writes RG to temp color tex
-            CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryColorTexture, ClearFlag.None);
-            CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, ctx.propertyBlock, shaderPassHorizontalBlur);
+            CoreUtils.SetRenderTarget(cmd, components.Generic.temporaryColorTexture, ClearFlag.None);
+            CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, propertyBlock, shaderPassHorizontalBlur);
 
             // vertical blur; writes RG to temp blur tex
-            CoreUtils.SetRenderTarget(ctx.cmd, components.Generic.temporaryBlurTexture, ClearFlag.None);
-            CoreUtils.DrawFullScreen(ctx.cmd, ocean.WaterScreenMaskM, ctx.propertyBlock, shaderPassVerticalBlur);
+            CoreUtils.SetRenderTarget(cmd, components.Generic.temporaryBlurTexture, ClearFlag.None);
+            CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, propertyBlock, shaderPassVerticalBlur);
         }
     }
 }
