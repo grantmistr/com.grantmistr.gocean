@@ -215,7 +215,7 @@ namespace GOcean
             }
 
             // init first to disable them so no errors thrown
-            customPasses.Initialize(this, components, constants);
+            customPasses.DisableVolumes();
 
             if (!ComponentCheck())
             {
@@ -235,6 +235,7 @@ namespace GOcean
             parametersUser.SetComponentReferences(components);
             SetShaderParams();
 
+            customPasses.Initialize(this, components, constants);
             customPasses.EnableVolumes();
 
             IsInitialized = true;

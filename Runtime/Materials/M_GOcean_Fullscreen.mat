@@ -328,7 +328,7 @@ Material:
     - _UVDetailsMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
-    - _UnderwaterFogColor: {r: 0.6179246, g: 0.8031732, b: 1, a: 1}
-    - _WaterColor: {r: 0.3915094, g: 0.70624596, b: 1, a: 1}
+    - _UnderwaterFogColor: {r: 0.6650944, g: 0.89166385, b: 1, a: 1}
+    - _WaterColor: {r: 0.41960785, g: 0.6420586, b: 0.6901961, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

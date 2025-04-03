@@ -32,6 +32,8 @@ MonoBehaviour:
     rid: 3806890946872738043
   mesh:
     rid: 3806890946872738044
+  physics:
+    rid: 8012526135123378292
   references:
     version: 2
     RefIds:
@@ -41,7 +43,6 @@ MonoBehaviour:
         waterWritesToDepth: 1
         randomSeed: 0
         waterHeight: 28.6
-        diffusionProfile: {fileID: 11400000, guid: 0ff5f42b178590e47af75d21ee34a2bd, type: 2}
     - rid: 3806890946872738036
       type: {class: WindParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
       data:
@@ -76,7 +77,7 @@ MonoBehaviour:
         smoothnessTransitionDistance: 2000
         refractionStrength: 5
         waterColor: {r: 0.39215684, g: 0.7349644, b: 1, a: 1}
-        scatteringColor: {r: 0.2509804, g: 0.40825796, b: 0.5176471, a: 1}
+        scatteringColor: {r: 0.3457636, g: 0.55302805, b: 0.6981132, a: 1}
         scatteringFalloff: 5
     - rid: 3806890946872738039
       type: {class: FoamParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
@@ -132,10 +133,11 @@ MonoBehaviour:
         underwaterFogColor: {r: 0.61960787, g: 0.84697735, b: 1, a: 1}
         underwaterFogFadeDistance: 150
         underwaterSurfaceEmissionStrength: 30
-        lightRayShadowMultiplier: 0.5
+        lightRayShadowMultiplier: 0.1
         lightRayTiling: 1
         lightRayDefinition: 1.25
         lightRayFadeInDistance: 1
+        sliceCount: 16
         maxSliceDepth: 80
         minSliceDepth: 1
     - rid: 3806890946872738044
@@ -149,3 +151,7 @@ MonoBehaviour:
         cullPadding: 0
         displacementFalloff: 3
         drawWireframe: 0
+    - rid: 8012526135123378292
+      type: {class: PhysicsParamsUser, ns: GOcean, asm: GrantMistr.GOcean}
+      data:
+        waterDampeningMultiplier: 1000

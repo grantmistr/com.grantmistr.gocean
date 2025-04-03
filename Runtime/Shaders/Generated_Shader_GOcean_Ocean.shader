@@ -7,6 +7,7 @@ Shader "GOcean/Ocean"
         [NoScaleOffset]_FoamTexture("_FoamTexture", 2D) = "white" {}
         _Smoothness("_Smoothness", Range(0, 1)) = 0
         _WaterColor("_WaterColor", Color) = (0.256586, 0.4585838, 0.5849056, 0)
+        _ScatteringColor("_ScatteringColor", Color) = (0.256586, 0.3585838, 0.4849056, 0)
         _FoamColor("_FoamColor", Color) = (1, 1, 1, 0)
         _FoamTiling("_FoamTiling", Float) = 0
         _ScatteringFalloff("_ScatteringFalloff", Float) = 0
@@ -28,8 +29,6 @@ Shader "GOcean/Ocean"
         _FoamTextureFadeDistance("_FoamTextureFadeDistance", Float) = 0
         _DistantFoam("_DistantFoam", Range(0, 1)) = 0
         _DisplacementMaxDistance("_DisplacementMaxDistance", Float) = 0
-        [DiffusionProfile]_DiffusionProfile("_DiffusionProfile", Float) = 0
-        [HideInInspector]_DiffusionProfile_Asset("_DiffusionProfile", Vector) = (0, 0, 0, 0)
         _SmoothnessTransitionDistance("_SmoothnessTransitionDistance", Float) = 0
         _DistantSmoothness("_DistantSmoothness", Float) = 0
         [HideInInspector]_EmissionColor("Color", Color) = (1, 1, 1, 1)
@@ -240,6 +239,7 @@ Shader "GOcean/Ocean"
             CBUFFER_START(UnityPerMaterial)
             float _Smoothness;
             float4 _WaterColor;
+            float4 _ScatteringColor;
             float4 _FoamColor;
             float4 _FoamTexture_TexelSize;
             float _FoamTiling;
@@ -262,7 +262,6 @@ Shader "GOcean/Ocean"
             float _FoamTextureFadeDistance;
             float _DistantFoam;
             float _DisplacementMaxDistance;
-            float _DiffusionProfile;
             float _SmoothnessTransitionDistance;
             float _DistantSmoothness;
             float4 _EmissionColor;
@@ -294,7 +293,7 @@ Shader "GOcean/Ocean"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/NormalSurfaceGradient.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoopDef.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
+            #include "ShaderInclude/GOcean_Lit.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/BuiltinUtilities.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/MaterialUtilities.hlsl"
@@ -447,7 +446,7 @@ Shader "GOcean/Ocean"
                 float3 underwaterEmission = clamp(refractedColor, 0.0, 100.0) * _UnderwaterSurfaceEmissionStrength * underwaterEmissionMask;
     
                 float3 waterColor = _UnderwaterFogColor.xyz * 0.25;
-                waterColor = (underwaterEmissionMask > 0.5) ? underwaterEmission : waterColor;
+                waterColor = underwaterEmissionMask > 0.5 ? underwaterEmission : waterColor;
                 waterColor = input.isFrontFace ? _UnderwaterFogColor.xyz * refractedColor : waterColor;
                 waterColor *= _TemporaryBlurTexture[refractionCoordSS].x * input.isFrontFace * _LightRayStrength * 0.5 + 0.5;
             
@@ -462,7 +461,7 @@ Shader "GOcean/Ocean"
                 surface.NormalWS = normal;
                 surface.TransmissionMask = transmissionMask;
                 surface.Thickness = thickness;
-                surface.DiffusionProfileHash = _DiffusionProfile;
+                surface.DiffusionProfileHash = 0.0;
                 surface.VTPackedFeedback = float4(1.0, 1.0, 1.0, 1.0);
     
                 return surface;
@@ -475,7 +474,7 @@ Shader "GOcean/Ocean"
         
             void ApplyDecalAndGetNormal(FragInputs fragInputs, PositionInputs posInput, SurfaceDescription surfaceDescription, inout SurfaceData surfaceData)
             {
-                float3 doubleSidedConstants = float3(-1.0, -1.0, -1.0);
+                float3 doubleSidedConstants = float3(1.0, 1.0, 1.0);
         
                 #ifdef DECAL_NORMAL_BLENDING
                 // SG nodes don't ouptut surface gradients, so if decals require surf grad blending, we have to convert
@@ -531,12 +530,13 @@ Shader "GOcean/Ocean"
                 surfaceData.ambientOcclusion =          surfaceDescription.Occlusion;
                 surfaceData.transmissionMask =          surfaceDescription.TransmissionMask.xxx;
                 surfaceData.thickness =                 surfaceDescription.Thickness;
-                surfaceData.diffusionProfileHash =      asuint(surfaceDescription.DiffusionProfileHash);
+                //surfaceData.diffusionProfileHash =      asuint(surfaceDescription.DiffusionProfileHash);
+                surfaceData.diffusionProfileHash =      0;
 
-                surfaceData.ior = 1.0;
-                surfaceData.transmittanceColor = float3(1.0, 1.0, 1.0);
-                surfaceData.atDistance = 1.0;
-                surfaceData.transmittanceMask = 0.0;
+                surfaceData.ior = 1.333;
+                surfaceData.transmittanceColor = _ScatteringColor.xyz;
+                surfaceData.atDistance = posInput.linearDepth;
+                surfaceData.transmittanceMask = saturate(1.0 - surfaceDescription.Thickness) * surfaceDescription.TransmissionMask;
         
                 // These static material feature allow compile time optimization
                 surfaceData.materialFeatures = MATERIALFEATUREFLAGS_LIT_STANDARD;
@@ -599,8 +599,8 @@ Shader "GOcean/Ocean"
                 #endif
                 #endif
 
-                SurfaceDescription surfaceDescription = SurfaceDescriptionFunction(fragInputs, V);
-        
+                SurfaceDescription surfaceDescription = SurfaceDescriptionFunction(fragInputs, V);        
+
                 #ifdef DEBUG_DISPLAY
                 if (_DebugMipMapMode != DEBUGMIPMAPMODE_NONE)
                 {

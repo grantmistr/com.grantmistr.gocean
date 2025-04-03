@@ -32,22 +32,23 @@ Material:
   - _DISABLE_SSR_TRANSPARENT
   - _ENABLE_FOG_ON_TRANSPARENT
   m_InvalidKeywords:
+  - _DOUBLESIDED_ON
   - _MATERIAL_FEATURE_TRANSMISSION
   - _NORMALMAP_TANGENT_SPACE
   - _SURFACE_TYPE_TRANSPARENT
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
+  m_DoubleSidedGI: 1
   m_CustomRenderQueue: 2990
   stringTagMap:
     MotionVector: User
     RenderType: Transparent
   disabledShaderPasses:
-  - TransparentDepthPrepass
+  - MOTIONVECTORS
   - TransparentDepthPostpass
   - TransparentBackface
   - RayTracingPrepass
-  - MOTIONVECTORS
+  - TransparentDepthPrepass
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -180,8 +181,8 @@ Material:
     - _BlendMode: 0
     - _CoatMask: 0
     - _ConservativeDepthOffsetEnable: 0
-    - _CullMode: 2
-    - _CullModeForward: 2
+    - _CullMode: 0
+    - _CullModeForward: 0
     - _Cutoff: 0.5
     - _DepthOffsetEnable: 0
     - _DetailAlbedoScale: 1
@@ -193,11 +194,11 @@ Material:
     - _DisplacementLockTilingScale: 1
     - _DisplacementMaxDistance: 1305
     - _DisplacementMode: 0
-    - _DistantFoam: 0.04000002
+    - _DistantFoam: 0.060000002
     - _DistantSmoothness: 0.7
-    - _DoubleSidedEnable: 0
+    - _DoubleSidedEnable: 1
     - _DoubleSidedGIMode: 0
-    - _DoubleSidedNormalMode: 0
+    - _DoubleSidedNormalMode: 2
     - _DstBlend: 10
     - _DstBlend2: 10
     - _EdgeFoamFalloff: 0.5
@@ -295,7 +296,7 @@ Material:
     - _UVDetail: 0
     - _UVEmissive: 0
     - _UVMultiplier: 0.9980507
-    - _UnderwaterSurfaceEmissionStrength: 30
+    - _UnderwaterSurfaceEmissionStrength: 40
     - _UseEmissiveIntensity: 0
     - _UseShadowThreshold: 0
     - _WaveDisplacementFade: 40
@@ -308,13 +309,14 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _DiffusionProfileAsset: {r: 0, g: 0, b: 0, a: 0}
     - _DiffusionProfile_Asset: {r: 1.740526e-12, g: -2.132737e+22, b: 7.5205245e-19, a: -0.07920252}
-    - _DoubleSidedConstants: {r: -1, g: -1, b: -1, a: 0}
+    - _DoubleSidedConstants: {r: 1, g: 1, b: 1, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissiveColor: {r: 0, g: 0, b: 0, a: 1}
     - _EmissiveColorLDR: {r: 0, g: 0, b: 0, a: 1}
     - _FoamColor: {r: 0.89, g: 0.88, b: 0.87, a: 1}
     - _InvPrimScale: {r: 1, g: 1, b: 0, a: 0}
     - _IridescenceThicknessRemap: {r: 0, g: 1, b: 0, a: 0}
+    - _ScatteringColor: {r: 0.49411762, g: 0.8235101, b: 1, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
     - _TerrainPosScaledBounds: {r: -1, g: 5, b: -1, a: 6}
     - _TerrainSize: {r: 200, g: 1200, b: 200, a: 0}
@@ -323,7 +325,7 @@ Material:
     - _UVDetailsMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
-    - _WaterColor: {r: 0.3915094, g: 0.70624596, b: 1, a: 1}
+    - _WaterColor: {r: 0.41960785, g: 0.6420586, b: 0.6901961, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &6072041512886400237

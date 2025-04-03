@@ -7,6 +7,7 @@ Shader "GOcean/OceanDistant"
         _DistantSmoothness("_DistantSmoothness", Range(0, 1)) = 0
         _DistantFoam("_DistantFoam", Range(0, 1)) = 0
         _WaterColor("_WaterColor", Color) = (0.256586, 0.4585838, 0.5849056, 0)
+        _ScatteringColor("_ScatteringColor", Color) = (0.256586, 0.3585838, 0.4849056, 0)
         _FoamColor("_FoamColor", Color) = (1, 1, 1, 0)
         _FoamTiling("_FoamTiling", Float) = 0
         _ScatteringFalloff("_ScatteringFalloff", Float) = 0
@@ -19,8 +20,6 @@ Shader "GOcean/OceanDistant"
         _ChunkSize("_ChunkSize", Int) = 0
         _FoamTextureFadeDistance("_FoamTextureFadeDistance", Float) = 0
         _SmoothnessTransitionDistance("_SmoothnessTransitionDistance", Float) = 0
-        [DiffusionProfile]_DiffusionProfile("_DiffusionProfile", Float) = 0
-        [HideInInspector]_DiffusionProfile_Asset("_DiffusionProfile", Vector) = (0, 0, 0, 0)
         [HideInInspector]_EmissionColor("Color", Color) = (1, 1, 1, 1)
         [HideInInspector]_RenderQueueType("Float", Float) = 4
         [HideInInspector][ToggleUI]_AddPrecomputedVelocity("Boolean", Float) = 0
@@ -142,7 +141,7 @@ Shader "GOcean/OceanDistant"
             #pragma multi_compile_fragment AREA_SHADOW_MEDIUM AREA_SHADOW_HIGH
             #pragma multi_compile_fragment SCREEN_SPACE_SHADOWS_OFF SCREEN_SPACE_SHADOWS_ON
             #pragma multi_compile_fragment USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
-            #define _MATERIAL_FEATURE_TRANSMISSION
+            //#define _MATERIAL_FEATURE_TRANSMISSION
         
             // Defines
             #define SHADERPASS SHADERPASS_FORWARD
@@ -239,6 +238,7 @@ Shader "GOcean/OceanDistant"
             CBUFFER_START(UnityPerMaterial)
             float _Smoothness;
             float4 _WaterColor;
+            float4 _ScatteringColor;
             float4 _FoamColor;
             float4 _FoamTexture_TexelSize;
             float _FoamTiling;
@@ -254,7 +254,6 @@ Shader "GOcean/OceanDistant"
             float _DistantFoam;
             float _FoamTextureFadeDistance;
             float _SmoothnessTransitionDistance;
-            float _DiffusionProfile;
             float4 _EmissionColor;
             float _UseShadowThreshold;
             float4 _DoubleSidedConstants;
@@ -280,7 +279,7 @@ Shader "GOcean/OceanDistant"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/NormalSurfaceGradient.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoopDef.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/Lit.hlsl"
+            #include "ShaderInclude/GOcean_Lit.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/BuiltinUtilities.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/MaterialUtilities.hlsl"
@@ -391,7 +390,7 @@ Shader "GOcean/OceanDistant"
                 surface.NormalWS = normal;
                 surface.TransmissionMask = transmissionMask;
                 surface.Thickness = thickness;
-                surface.DiffusionProfileHash = _DiffusionProfile;
+                surface.DiffusionProfileHash = 0.0;
                 surface.VTPackedFeedback = float4(1.0, 1.0, 1.0, 1.0);
     
                 return surface;
@@ -404,7 +403,7 @@ Shader "GOcean/OceanDistant"
         
             void ApplyDecalAndGetNormal(FragInputs fragInputs, PositionInputs posInput, SurfaceDescription surfaceDescription, inout SurfaceData surfaceData)
             {
-                float3 doubleSidedConstants = float3(-1.0, -1.0, -1.0);
+                float3 doubleSidedConstants = float3(1.0, 1.0, 1.0);
         
                 #ifdef DECAL_NORMAL_BLENDING
                     // SG nodes don't ouptut surface gradients, so if decals require surf grad blending, we have to convert
@@ -461,12 +460,13 @@ Shader "GOcean/OceanDistant"
                 surfaceData.ambientOcclusion =          surfaceDescription.Occlusion;
                 surfaceData.transmissionMask =          surfaceDescription.TransmissionMask.xxx;
                 surfaceData.thickness =                 surfaceDescription.Thickness;
-                surfaceData.diffusionProfileHash =      asuint(surfaceDescription.DiffusionProfileHash);
+                //surfaceData.diffusionProfileHash =      asuint(surfaceDescription.DiffusionProfileHash);
+                surfaceData.diffusionProfileHash =      0;
 
-                surfaceData.ior = 1.0;
-                surfaceData.transmittanceColor = float3(1.0, 1.0, 1.0);
-                surfaceData.atDistance = 1.0;
-                surfaceData.transmittanceMask = 0.0;
+                surfaceData.ior = 1.333;
+                surfaceData.transmittanceColor = _ScatteringColor.xyz;
+                surfaceData.atDistance = posInput.linearDepth;
+                surfaceData.transmittanceMask = saturate(1.0 - surfaceDescription.Thickness) * surfaceDescription.TransmissionMask;
         
                 // These static material feature allow compile time optimization
                 surfaceData.materialFeatures = MATERIALFEATUREFLAGS_LIT_STANDARD;

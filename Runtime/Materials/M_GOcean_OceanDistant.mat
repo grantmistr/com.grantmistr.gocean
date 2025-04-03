@@ -186,7 +186,7 @@ Material:
     - _DisplacementLockObjectScale: 1
     - _DisplacementLockTilingScale: 1
     - _DisplacementMode: 0
-    - _DistantFoam: 0.04000002
+    - _DistantFoam: 0.060000002
     - _DistantSmoothness: 0.7
     - _DoubleSidedEnable: 0
     - _DoubleSidedGIMode: 0
@@ -281,7 +281,7 @@ Material:
     - _UVBase: 0
     - _UVDetail: 0
     - _UVEmissive: 0
-    - _UnderwaterSurfaceEmissionStrength: 30
+    - _UnderwaterSurfaceEmissionStrength: 40
     - _UseEmissiveIntensity: 0
     - _UseShadowThreshold: 0
     - _ZTestDepthEqualForOpaque: 0
@@ -300,13 +300,14 @@ Material:
     - _FoamColor: {r: 0.89, g: 0.88, b: 0.87, a: 1}
     - _InvPrimScale: {r: 1, g: 1, b: 0, a: 0}
     - _IridescenceThicknessRemap: {r: 0, g: 1, b: 0, a: 0}
+    - _ScatteringColor: {r: 0.49411762, g: 0.8235101, b: 1, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
     - _ThicknessRemap: {r: 0, g: 1, b: 0, a: 0}
     - _TransmittanceColor: {r: 1, g: 1, b: 1, a: 1}
     - _UVDetailsMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
-    - _WaterColor: {r: 0.3915094, g: 0.70624596, b: 1, a: 1}
+    - _WaterColor: {r: 0.41960785, g: 0.6420586, b: 0.6901961, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &6019786590546721392

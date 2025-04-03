@@ -34,8 +34,6 @@ namespace GOcean
         public override void Initialize()
         {
             InitializeParams(ocean.parametersUser.surface);
-
-            SetScatteringColorOnDiffusionProfile();
         }
 
         public override void InitializeParams(BaseParamsUser userParams)
@@ -51,11 +49,6 @@ namespace GOcean
             tintColor = CalculateTintColor(u.waterColor);
             scatteringFalloff = u.scatteringFalloff;
             scatteringColor = u.scatteringColor;
-        }
-
-        private void SetScatteringColorOnDiffusionProfile()
-        {
-            components.Generic.diffusionProfile.scatteringDistance = scatteringColor;
         }
 
         private Color CalculateTintColor(Color waterColor)

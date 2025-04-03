@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace GOcean
 {
@@ -55,14 +54,6 @@ namespace GOcean
             }
         }
 
-        private void OnEnable()
-        {
-            if (generic != null)
-            {
-                generic.SetDiffusionProfile();
-            }
-        }
-
         public void SetComponentReferences(ComponentContainer components)
         {
             for (int i = 0; i < NUM_COMPONENTS; i++)
@@ -103,34 +94,10 @@ namespace GOcean
     [System.Serializable]
     public class GenericParamsUser : BaseParamsUser
     {
-        public const string DIFFUSION_PROFILE_RESOURCE_STRING = "GOcean_DefaultOceanDiffusionProfile";
-
         [Tooltip("Write screen water to depth buffer before post processing. Useful for depth of field.")]
         public bool waterWritesToDepth = true;
         public int randomSeed = 0;
         public float waterHeight = 100f;
-        public DiffusionProfileSettings diffusionProfile;
-
-        public void SetDiffusionProfile()
-        {
-            if (diffusionProfile == null)
-            {
-                ResourceRequest request = Resources.LoadAsync<DiffusionProfileSettings>(DIFFUSION_PROFILE_RESOURCE_STRING);
-                request.completed += OnCompletedDefaultDiffusionProfileRequest;
-            }
-        }
-
-        private void OnCompletedDefaultDiffusionProfileRequest(AsyncOperation a)
-        {
-            DiffusionProfileSettings defaultDiffusionProfile = (a as ResourceRequest).asset as DiffusionProfileSettings;
-
-            if (defaultDiffusionProfile == null)
-            {
-                throw new System.Exception("Could not get default ocean diffusion profile.");
-            }
-
-            diffusionProfile = defaultDiffusionProfile;
-        }
     }
 
     [System.Serializable]
@@ -297,7 +264,7 @@ namespace GOcean
         [Range(0f, 500f)]
         public float underwaterSurfaceEmissionStrength = 30f;
         [Range(0f, 1f)]
-        public float lightRayShadowMultiplier = 0.5f;
+        public float lightRayShadowMultiplier = 0.1f;
         [Min(0f)]
         public float lightRayTiling = 1f;
         [Range(0f, 3f)]

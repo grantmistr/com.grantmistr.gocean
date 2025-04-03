@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Unity.Mathematics;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
@@ -18,10 +14,6 @@ namespace GOcean
         public const int RANDOM_NOISE_TEXTURE_RESOLUTION = 256;
 
         public bool waterWritesToDepth;
-
-        public DiffusionProfileSettings diffusionProfile;
-        private Vector4 diffusionProfileVec4GUI;
-        private float diffusionProfileHash;
 
         [ShaderParam("_RandomSeed")]
         public int randomSeed;
@@ -49,7 +41,6 @@ namespace GOcean
         {
             InitializeParams(ocean.parametersUser.generic);
 
-            AddDiffusionProfileToList(diffusionProfile);
             FindShaderPasses();
             InitializeTextures();
             SetMaterialKeywords();
@@ -70,87 +61,7 @@ namespace GOcean
 
             waterWritesToDepth = u.waterWritesToDepth;
             waterHeight = u.waterHeight;
-            diffusionProfile = u.diffusionProfile;
             randomSeed = UpdateRandomSeed(u.randomSeed);
-        }
-
-        public override void SetShaderParams()
-        {
-            HDMaterial.SetDiffusionProfileShaderGraph(ocean.OceanM, diffusionProfile, "_DiffusionProfile");
-            HDMaterial.SetDiffusionProfileShaderGraph(ocean.DistantOceanM, diffusionProfile, "_DiffusionProfile");
-
-            base.SetShaderParams();
-        }
-
-        private void UpdateDiffusionProfileData(string diffusionProfileGUI)
-        {
-            if (string.IsNullOrEmpty(diffusionProfileGUI))
-            {
-                diffusionProfileVec4GUI = Vector4.zero;
-                diffusionProfileHash = 0f;
-
-                Debug.Log("Diffusion Profile 0");
-
-                return;
-            }
-
-            diffusionProfileVec4GUI = DiffusionProfileHelper.ConvertGUIDToVector4(diffusionProfileGUI);
-            diffusionProfileHash = math.asfloat(DiffusionProfileHelper.GetDiffusionProfileHash(diffusionProfileGUI));
-        }
-
-        private async void AddDiffusionProfileToList(DiffusionProfileSettings diffusionProfile)
-        {
-            if (!await WaitForVolumeManagerInstanceInitialization(VolumeManager.instance))
-            {
-                Debug.Log("Volume manager instance did not initialize in ~999 frames.");
-                return;
-            }
-
-            if (VolumeManager.instance.globalDefaultProfile == null)
-            {
-                Debug.Log("Could not get global default volume profile.");
-                return;
-            }
-
-            if (!VolumeManager.instance.globalDefaultProfile.TryGet<DiffusionProfileList>(out DiffusionProfileList diffusionProfileList))
-            {
-                Debug.Log("Could not get diffusion profile list on global default volume profile, creating one.");
-                diffusionProfileList = VolumeManager.instance.globalDefaultProfile.Add<DiffusionProfileList>();
-            }
-
-            if (!diffusionProfileList.diffusionProfiles.value.Contains(diffusionProfile))
-            {
-                DiffusionProfileSettings[] newSettings = new DiffusionProfileSettings[diffusionProfileList.diffusionProfiles.value.Length + 1];
-                for (int i = 0; i < diffusionProfileList.diffusionProfiles.value.Length; i++)
-                {
-                    newSettings[i] = diffusionProfileList.diffusionProfiles.value[i];
-                }
-                newSettings[newSettings.Length - 1] = diffusionProfile;
-
-                diffusionProfileList.diffusionProfiles.value = newSettings;
-
-                // it took literal days to figure out I needed to call this function. about had an aneurysm
-                VolumeManager.instance.OnVolumeComponentChanged(diffusionProfileList);
-            }
-        }
-
-        private async Task<bool> WaitForVolumeManagerInstanceInitialization(VolumeManager instance)
-        {
-            int i = 0;
-            while (!instance.isInitialized)
-            {
-                i++;
-                if (i > 999)
-                {
-                    return false;
-                }
-
-                int delay = Mathf.RoundToInt(Time.deltaTime * 1000f);
-                delay = delay == 0 ? 100 : delay;
-                await Task.Delay(delay);
-            }
-
-            return true;
         }
 
         private void SetMaterialKeywords()
