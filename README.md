@@ -4,7 +4,9 @@
 GOcean is an infinite ocean rendering system for Unity HDRP.
 
 ![screenshot](./Images~/Ocean_SS_0.jpg)
-![screenshot](./Images~/Ocean_SS_1.jpg) ![screenshot](./Images~/Ocean_SS_2.jpg) ![screenshot](./Images~/Ocean_SS_3.jpg)
+| | | |
+| --- | --- | --- |
+| ![screenshot](./Images~/Ocean_SS_1.jpg) | ![screenshot](./Images~/Ocean_SS_2.jpg) | ![screenshot](./Images~/Ocean_SS_3.jpg)
 
 ### Installation
 
