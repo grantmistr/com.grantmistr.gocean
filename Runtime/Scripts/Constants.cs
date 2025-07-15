@@ -42,25 +42,8 @@ namespace GOcean
                 unused3 = 0
             };
 
-            public void Update(CustomPassContext ctx, ComponentContainer components)
+            public void Update(Camera camera, ComponentContainer components, HDShadowSettings shadowSettings)
             {
-                HDShadowSettings shadowSettings = ctx.hdCamera.volumeStack.GetComponent<HDShadowSettings>();
-
-                cascadeShadowSplits[0] = shadowSettings.cascadeShadowSplit0.value * shadowSettings.maxShadowDistance.value;
-                cascadeShadowSplits[1] = shadowSettings.cascadeShadowSplit1.value * shadowSettings.maxShadowDistance.value;
-                cascadeShadowSplits[2] = shadowSettings.cascadeShadowSplit2.value * shadowSettings.maxShadowDistance.value;
-                cascadeShadowSplits[3] = shadowSettings.maxShadowDistance.value;
-
-                cameraPositionStepped = CalculateCameraPositionStepped(ctx.hdCamera.camera, components.Mesh.chunkSize);
-                cameraZRotation = GetCameraZRotation(ctx.hdCamera.camera);
-                terrainLookupCoordOffset = components.Terrain.terrainLookupCoordOffset;
-                validTerrainHeightmapMask = components.Terrain.validTerrainHeightmapMask;
-            }
-
-            public void Update(Camera camera, ComponentContainer components)
-            {
-                HDShadowSettings shadowSettings = VolumeManager.instance.stack.GetComponent<HDShadowSettings>();
-
                 if (shadowSettings != null)
                 {
                     cascadeShadowSplits[0] = shadowSettings.cascadeShadowSplit0.value * shadowSettings.maxShadowDistance.value;
@@ -69,14 +52,23 @@ namespace GOcean
                     cascadeShadowSplits[3] = shadowSettings.maxShadowDistance.value;
                 }
 
-                if (camera != null)
-                {
-                    cameraPositionStepped = CalculateCameraPositionStepped(camera, components.Mesh.chunkSize);
-                    cameraZRotation = GetCameraZRotation(camera);
-                }
+                cameraPositionStepped = CalculateCameraPositionStepped(camera, components.Mesh.chunkSize);
+                cameraZRotation = GetCameraZRotation(camera);
 
                 terrainLookupCoordOffset = components.Terrain.terrainLookupCoordOffset;
                 validTerrainHeightmapMask = components.Terrain.validTerrainHeightmapMask;
+            }
+
+            public void Update(Camera camera, ComponentContainer components)
+            {
+                if (camera == null)
+                {
+                    return;
+                }
+
+                HDShadowSettings shadowSettings = VolumeManager.instance.stack.GetComponent<HDShadowSettings>();
+
+                Update(camera, components, shadowSettings);
             }
 
             public static int SizeOf()
@@ -199,19 +191,14 @@ namespace GOcean
             Shader.SetGlobalConstantBuffer(PropIDs.GOceanConstant, constantDataBuffer, 0, ConstantData.SizeOf());
         }
 
-        public void UpdatePerCameraData(CustomPassContext ctx, ComponentContainer components)
+        public void UpdatePerCameraData(HDCamera hdCamera, ComponentContainer components)
         {
-            perCameraData[0].Update(ctx, components);
+            perCameraData[0].Update(hdCamera.camera, components, hdCamera.volumeStack.GetComponent<HDShadowSettings>());
             perCameraDataBuffer.SetData(perCameraData);
         }
 
         public void UpdatePerCameraData(Camera camera, ComponentContainer components)
         {
-            if (camera == null)
-            {
-                return;
-            }
-
             perCameraData[0].Update(camera, components);
             perCameraDataBuffer.SetData(perCameraData);
         }

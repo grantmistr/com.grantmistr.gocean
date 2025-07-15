@@ -1,8 +1,10 @@
 # Changelog
 
-## 1.1.3 (2025-03-)
+## 1.1.3 (2025-04-)
 - Fix warnings on AsynGPUReadback
 - Light ray iterations user param
+- Removed diffusion profiles
+- OnInitialized and OnUnInitialized method signature changed
 
 ## 1.1.2 (2025-03-08)
 - Fix errors on floater creation

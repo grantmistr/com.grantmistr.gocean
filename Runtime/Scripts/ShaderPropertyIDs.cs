@@ -10,7 +10,7 @@ namespace GOcean
 
                 UNITY_UV_STARTS_AT_TOP = "UNITY_UV_STARTS_AT_TOP",
                 UNITY_REVERSED_Z = "UNITY_REVERSED_Z",
-                WATER_WRITES_TO_DEPTH = "WATER_WRITES_TO_DEPTH",
+                SCREEN_WATER_WRITES_TO_DEPTH = "SCREEN_WATER_WRITES_TO_DEPTH",
                 HAS_TERRAIN_ON = "HAS_TERRAIN_ON"
                 ;
         }

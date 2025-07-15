@@ -9,6 +9,8 @@ namespace GOcean
 
     public class Screen : Component
     {
+        public bool screenWaterWritesToDepth;
+
         [ShaderParam("_ScreenWaterNoiseTexture")]
         public Texture2D screenWaterNoiseTexture;
         [ShaderParam("_ScreenWaterTiling")]
@@ -20,7 +22,7 @@ namespace GOcean
         public RTHandle screenTexture;
 
         private int shaderPassClear, shaderPassScreenMask, shaderPassScreenMaskUnderwaterPyramid, shaderPassHorizontalBlur, shaderPassVerticalBlur,
-            shaderPassDepthOnlyOcean, shaderPassDepthOnlyDistantOcean, shaderPassEncodeMasks, shaderPassClearMasks;
+            shaderPassDepthOnlyOcean, shaderPassDepthOnlyDistantOcean, shaderPassEncodeMasks, shaderPassClearMasks, shaderPassTransferFinal, shaderPassTransferFinalWriteDepth;
 
         public Screen()
         {
@@ -43,6 +45,7 @@ namespace GOcean
         {
             ScreenParamsUser u = userParams as ScreenParamsUser;
 
+            screenWaterWritesToDepth = u.screenWaterWritesToDepth;
             screenWaterNoiseTexture = u.screenWaterNoiseTexture;
             screenWaterTiling = u.screenWaterTiling;
             screenWaterFadeSpeed = u.screenWaterFadeSpeed;
@@ -52,6 +55,7 @@ namespace GOcean
         {
             SetKeyword(ocean.WaterScreenMaskM, PropIDs.ShaderKeywords.UNITY_UV_STARTS_AT_TOP, SystemInfo.graphicsUVStartsAtTop);
             SetKeyword(ocean.WaterScreenMaskM, PropIDs.ShaderKeywords.UNITY_REVERSED_Z, SystemInfo.usesReversedZBuffer);
+            SetKeyword(ocean.FullscreenM, PropIDs.ShaderKeywords.SCREEN_WATER_WRITES_TO_DEPTH, screenWaterWritesToDepth);
 
             base.SetShaderParams();
         }
@@ -85,6 +89,8 @@ namespace GOcean
             shaderPassVerticalBlur = ocean.WaterScreenMaskM.FindPass("VerticalBlur");
             shaderPassDepthOnlyOcean = ocean.WaterScreenMaskM.FindPass("DepthOnlyOcean");
             shaderPassDepthOnlyDistantOcean = ocean.WaterScreenMaskM.FindPass("DepthOnlyDistantOcean");
+            shaderPassTransferFinal = ocean.FullscreenM.FindPass("TransferFinal");
+            shaderPassTransferFinalWriteDepth = ocean.FullscreenM.FindPass("TransferFinalWriteDepth");
         }
 
         /// <summary>
@@ -164,6 +170,20 @@ namespace GOcean
             // vertical blur; writes RG to temp blur tex
             CoreUtils.SetRenderTarget(cmd, components.Generic.temporaryBlurTexture, ClearFlag.None);
             CoreUtils.DrawFullScreen(cmd, ocean.WaterScreenMaskM, propertyBlock, shaderPassVerticalBlur);
+        }
+
+        public void TransferFinal(CommandBuffer cmd, RTHandle cameraColorBuffer, RTHandle cameraDepthBuffer, MaterialPropertyBlock propertyBlock)
+        {
+            if (screenWaterWritesToDepth)
+            {
+                CoreUtils.SetRenderTarget(cmd, cameraColorBuffer, cameraDepthBuffer);
+                CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassTransferFinalWriteDepth);
+            }
+            else
+            {
+                CoreUtils.SetRenderTarget(cmd, cameraColorBuffer);
+                CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassTransferFinal);
+            }
         }
     }
 }

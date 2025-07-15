@@ -84,11 +84,7 @@ Shader "GOcean/OceanDistant"
         Tags
         {
             "RenderPipeline"="HDRenderPipeline"
-            "RenderType"="HDLitShader"
-            "Queue"="Transparent+0"
-            //"DisableBatching"="False"
-            //"ShaderGraphShader"="true"
-            //"ShaderGraphTargetId"="HDLitSubTarget"
+            "Queue"="Transparent"
         }
         
         Pass
@@ -120,10 +116,7 @@ Shader "GOcean/OceanDistant"
             #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
         
             // Keywords
-            #define _SURFACE_TYPE_TRANSPARENT
             #pragma shader_feature_local _ _ADD_PRECOMPUTED_VELOCITY
-            #pragma shader_feature_local _ _TRANSPARENT_WRITES_MOTION_VEC _TRANSPARENT_REFRACTIVE_SORT
-            #pragma shader_feature_local_fragment _ _ENABLE_FOG_ON_TRANSPARENT
             #pragma multi_compile _ DEBUG_DISPLAY
             #pragma shader_feature_local_fragment _ _DISABLE_DECALS
             #pragma shader_feature_local_fragment _ _DISABLE_SSR
@@ -141,9 +134,12 @@ Shader "GOcean/OceanDistant"
             #pragma multi_compile_fragment AREA_SHADOW_MEDIUM AREA_SHADOW_HIGH
             #pragma multi_compile_fragment SCREEN_SPACE_SHADOWS_OFF SCREEN_SPACE_SHADOWS_ON
             #pragma multi_compile_fragment USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
-            //#define _MATERIAL_FEATURE_TRANSMISSION
         
             // Defines
+            #define _SURFACE_TYPE_TRANSPARENT
+            #define _MATERIAL_FEATURE_TRANSMISSION
+            #define _ENABLE_FOG_ON_TRANSPARENT
+            
             #define SHADERPASS SHADERPASS_FORWARD
             #define SUPPORT_BLENDMODE_PRESERVE_SPECULAR_LIGHTING 1
             #define HAS_LIGHTLOOP 1
@@ -165,51 +161,17 @@ Shader "GOcean/OceanDistant"
             #include "Packages/com.unity.shadergraph/ShaderGraphLibrary/Functions.hlsl" // Need to be here for Gradient struct definition
         
             // --------------------------------------------------
-            // Defines
-        
-            // Attribute
-            #define ATTRIBUTES_NEED_NORMAL
-            #define ATTRIBUTES_NEED_TANGENT
-            #define ATTRIBUTES_NEED_TEXCOORD1
-            #define ATTRIBUTES_NEED_TEXCOORD2
-            #define VARYINGS_NEED_POSITION_WS
-            #define VARYINGS_NEED_TANGENT_TO_WORLD
-            #define VARYINGS_NEED_TEXCOORD1
-            #define VARYINGS_NEED_TEXCOORD2
-            #define HAVE_MESH_MODIFICATION
-        
             //Strip down the FragInputs.hlsl (on graphics), so we can only optimize the interpolators we use.
             //if by accident something requests contents of FragInputs.hlsl, it will be caught as a compiler error
             //Frag inputs stripping is only enabled when FRAG_INPUTS_ENABLE_STRIPPING is set
             #if !defined(SHADER_STAGE_RAY_TRACING) && SHADERPASS != SHADERPASS_RAYTRACING_GBUFFER && SHADERPASS != SHADERPASS_FULL_SCREEN_DEBUG
             #define FRAG_INPUTS_ENABLE_STRIPPING
             #endif
-            #define FRAG_INPUTS_USE_TEXCOORD1
-            #define FRAG_INPUTS_USE_TEXCOORD2
         
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/FragInputs.hlsl"
         
             // Define when IsFontFaceNode is included in ShaderGraph
             #define VARYINGS_NEED_CULLFACE
-        
-            // Following two define are a workaround introduce in 10.1.x for RaytracingQualityNode
-            // The ShaderGraph don't support correctly migration of this node as it serialize all the node data
-            // in the json file making it impossible to uprgrade. Until we get a fix, we do a workaround here
-            // to still allow us to rename the field and keyword of this node without breaking existing code.
-            #ifdef RAYTRACING_SHADER_GRAPH_DEFAULT
-            #define RAYTRACING_SHADER_GRAPH_HIGH
-            #endif
-        
-            #ifdef RAYTRACING_SHADER_GRAPH_RAYTRACED
-            #define RAYTRACING_SHADER_GRAPH_LOW
-            #endif
-            // end
-        
-            // We need isFrontFace when using double sided - it is not required for unlit as in case of unlit double sided only drive the cullmode
-            // VARYINGS_NEED_CULLFACE can be define by VaryingsMeshToPS.FaceSign input if a IsFrontFace Node is included in the shader graph.
-            #if defined(_DOUBLESIDED_ON) && !defined(VARYINGS_NEED_CULLFACE)
-                #define VARYINGS_NEED_CULLFACE
-            #endif
         
             // Specific Material Define
             #define _SPECULAR_OCCLUSION_FROM_AO 1
@@ -217,22 +179,6 @@ Shader "GOcean/OceanDistant"
         
             // This shader support recursive rendering for raytracing
             #define HAVE_RECURSIVE_RENDERING
-        
-            // To handle SSR on transparent correctly with a possibility to enable/disable it per framesettings
-            // we should have a code like this:
-            // if !defined(_DISABLE_SSR_TRANSPARENT)
-            // pragma multi_compile _ WRITE_NORMAL_BUFFER
-            // endif
-            // i.e we enable the multicompile only if we can receive SSR or not, and then C# code drive
-            // it based on if SSR transparent in frame settings and not (and stripper can strip it).
-            // this is currently not possible with our current preprocessor as _DISABLE_SSR_TRANSPARENT is a keyword not a define
-            // so instead we used this and chose to pay the extra cost of normal write even if SSR transaprent is disabled.
-            // Ideally the shader graph generator should handle it but condition below can't be handle correctly for now.
-            #if SHADERPASS == SHADERPASS_TRANSPARENT_DEPTH_PREPASS
-            #if !defined(_DISABLE_SSR_TRANSPARENT) && !defined(SHADER_UNLIT)
-                #define WRITE_NORMAL_BUFFER
-            #endif
-            #endif
         
             // -- Graph Properties
             CBUFFER_START(UnityPerMaterial)

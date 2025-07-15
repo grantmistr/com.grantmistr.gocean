@@ -171,7 +171,7 @@ namespace GOcean
         {
             components.Generic.SetRTHandleSystemReferenceSize(ctx.hdCamera.actualWidth, ctx.hdCamera.actualHeight);
             components.Terrain.UpdateTerrainData(ctx.cmd, ctx.hdCamera.camera.transform.position);
-            constants.UpdatePerCameraData(ctx, components);
+            constants.UpdatePerCameraData(ctx.hdCamera, components);
             components.Displacement.UpdateSpectrumTexture(ctx.cmd);
             components.Terrain.UpdateDirectionalInfluenceAndComputeTerrainTextureArray(ctx.cmd);
             components.Mesh.UpdateMesh(ctx.cmd, ctx.hdCamera.frustum.planes, ctx.cameraDepthBuffer, ctx.hdCamera.camera.transform.position);
@@ -257,7 +257,7 @@ namespace GOcean
         protected override void Execute(CustomPassContext ctx)
         {
             components.Underwater.DrawUnderwaterTint(ctx.cmd, ctx.propertyBlock);
-            components.Generic.TransferFinal(ctx.cmd, ctx.cameraColorBuffer, ctx.cameraDepthBuffer, ctx.propertyBlock);
+            components.Screen.TransferFinal(ctx.cmd, ctx.cameraColorBuffer, ctx.cameraDepthBuffer, ctx.propertyBlock);
         }
     }
 }

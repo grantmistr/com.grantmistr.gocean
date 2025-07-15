@@ -14,10 +14,6 @@ float4 Vert(uint vertexID : SV_VertexID) : SV_Position
 
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplayMaterial.hlsl"
 
-#if defined(_TRANSPARENT_REFRACTIVE_SORT) || defined(_ENABLE_FOG_ON_TRANSPARENT)
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Water/Shaders/UnderWaterUtilities.hlsl"
-#endif
-
 //NOTE: some shaders set target1 to be
 //   Blend 1 One OneMinusSrcAlpha
 //The reason for this blend mode is to let virtual texturing alpha dither work.
@@ -81,9 +77,7 @@ void Frag(float4 iVertex : SV_Position
     input.positionRWS = posRWS.xyz; // TODO maybe add spectrumSample.z
     input.positionPredisplacementRWS = input.positionRWS;
     input.positionPixel = input.positionSS.xy;
-    input.texCoord1 = 0;
-    input.texCoord2 = 0;
-    input.color = 0;
+    input.color = 0;    
     input.tangentToWorld = M_3x3_identity;
     input.primitiveID = 0;
     input.isFrontFace = !GetUnderwaterMask(oceanScreenTextureSample);
@@ -152,10 +146,6 @@ void Frag(float4 iVertex : SV_Position
             outColor = EvaluateAtmosphericScattering(posInput, V, outColor);
             #endif
         
-            #ifdef _TRANSPARENT_REFRACTIVE_SORT
-            ComputeRefractionSplitColor(posInput, outColor, outBeforeRefractionColor, outBeforeRefractionAlpha);
-            #endif
-        
             float underwaterFogMask = (1.0 - GetUnderwaterDistanceFade(posInput.linearDepth, _UnderwaterFogFadeDistance)) * !input.isFrontFace;
             float linearEyeDepth = min(posInput.linearDepth, _UnderwaterFogFadeDistance);
             float mipLevel = (1.0 - _MipFogMaxMip * saturate((linearEyeDepth - _MipFogNear) / (_MipFogFar - _MipFogNear))) * (ENVCONSTANTS_CONVOLUTION_MIP_COUNT - 1);
@@ -173,9 +163,6 @@ void Frag(float4 iVertex : SV_Position
 
 #ifdef UNITY_VIRTUAL_TEXTURING
     float vtAlphaValue = builtinData.opacity;
-#if defined(HAS_REFRACTION) && HAS_REFRACTION
-        vtAlphaValue = 1.0f - bsdfData.transmittanceMask;
-#endif
     outVTFeedback = PackVTFeedbackWithAlpha(builtinData.vtPackedFeedback, input.positionSS.xy, vtAlphaValue);
     outVTFeedback.rgb *= outVTFeedback.a; // premuliplied alpha
 #endif

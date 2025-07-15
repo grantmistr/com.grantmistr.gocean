@@ -160,7 +160,7 @@ namespace GOcean
             //propertyBlock.SetTexture(PropIDs.oceanScreenTexture, components.Screen.screenTexture);
             //propertyBlock.SetTexture(PropIDs.temporaryColorTexture, components.Generic.temporaryColorTexture);
 
-            if (components.Generic.waterWritesToDepth)
+            if (components.Screen.screenWaterWritesToDepth)
             {
                 propertyBlock.SetTexture(PropIDs.waterDepthTexture, components.Generic.waterDepthTexture);
                 //propertyBlock.SetTexture(PropIDs.temporaryDepthTexture, components.Generic.temporaryDepthTexture);

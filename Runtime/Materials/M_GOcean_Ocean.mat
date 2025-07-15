@@ -30,16 +30,15 @@ Material:
   m_ValidKeywords:
   - HAS_TERRAIN_ON
   - _DISABLE_SSR_TRANSPARENT
-  - _ENABLE_FOG_ON_TRANSPARENT
   m_InvalidKeywords:
-  - _DOUBLESIDED_ON
+  - _ENABLE_FOG_ON_TRANSPARENT
   - _MATERIAL_FEATURE_TRANSMISSION
   - _NORMALMAP_TANGENT_SPACE
   - _SURFACE_TYPE_TRANSPARENT
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 1
-  m_CustomRenderQueue: 2990
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2900
   stringTagMap:
     MotionVector: User
     RenderType: Transparent
@@ -173,7 +172,7 @@ Material:
     - _AlphaCutoffPostpass: 0.5
     - _AlphaCutoffPrepass: 0.5
     - _AlphaCutoffShadow: 0.5
-    - _AlphaDstBlend: 10
+    - _AlphaDstBlend: 0
     - _AlphaRemapMax: 1
     - _AlphaRemapMin: 0
     - _AlphaSrcBlend: 1
@@ -181,8 +180,8 @@ Material:
     - _BlendMode: 0
     - _CoatMask: 0
     - _ConservativeDepthOffsetEnable: 0
-    - _CullMode: 0
-    - _CullModeForward: 0
+    - _CullMode: 2
+    - _CullModeForward: 2
     - _Cutoff: 0.5
     - _DepthOffsetEnable: 0
     - _DetailAlbedoScale: 1
@@ -196,10 +195,10 @@ Material:
     - _DisplacementMode: 0
     - _DistantFoam: 0.060000002
     - _DistantSmoothness: 0.7
-    - _DoubleSidedEnable: 1
+    - _DoubleSidedEnable: 0
     - _DoubleSidedGIMode: 0
     - _DoubleSidedNormalMode: 2
-    - _DstBlend: 10
+    - _DstBlend: 0
     - _DstBlend2: 10
     - _EdgeFoamFalloff: 0.5
     - _EdgeFoamStrength: 0.3
@@ -209,7 +208,7 @@ Material:
     - _EmissiveIntensity: 1
     - _EmissiveIntensityUnit: 0
     - _EnableBlendModePreserveSpecularLighting: 1
-    - _EnableFogOnTransparent: 1
+    - _EnableFogOnTransparent: 0
     - _EnableGeometricSpecularAA: 0
     - _EnergyConservingSpecularColor: 1
     - _ExcludeFromTUAndAA: 0
@@ -289,7 +288,7 @@ Material:
     - _TransparentCullMode: 2
     - _TransparentDepthPostpassEnable: 0
     - _TransparentDepthPrepassEnable: 0
-    - _TransparentSortPriority: -10
+    - _TransparentSortPriority: -50
     - _TransparentWritingMotionVec: 0
     - _TransparentZWrite: 0
     - _UVBase: 0
@@ -316,7 +315,7 @@ Material:
     - _FoamColor: {r: 0.89, g: 0.88, b: 0.87, a: 1}
     - _InvPrimScale: {r: 1, g: 1, b: 0, a: 0}
     - _IridescenceThicknessRemap: {r: 0, g: 1, b: 0, a: 0}
-    - _ScatteringColor: {r: 0.49411762, g: 0.8235101, b: 1, a: 1}
+    - _ScatteringColor: {r: 0.28764686, g: 0.49349692, b: 0.6037736, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
     - _TerrainPosScaledBounds: {r: -1, g: 5, b: -1, a: 6}
     - _TerrainSize: {r: 200, g: 1200, b: 200, a: 0}

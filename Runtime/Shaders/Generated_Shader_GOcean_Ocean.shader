@@ -32,60 +32,27 @@ Shader "GOcean/Ocean"
         _SmoothnessTransitionDistance("_SmoothnessTransitionDistance", Float) = 0
         _DistantSmoothness("_DistantSmoothness", Float) = 0
         [HideInInspector]_EmissionColor("Color", Color) = (1, 1, 1, 1)
-        [HideInInspector]_RenderQueueType("Float", Float) = 4
+        //[HideInInspector]_RenderQueueType("Float", Float) = 4
         [HideInInspector][ToggleUI]_AddPrecomputedVelocity("Boolean", Float) = 0
-        [HideInInspector][ToggleUI]_DepthOffsetEnable("Boolean", Float) = 0
-        [HideInInspector][ToggleUI]_ConservativeDepthOffsetEnable("Boolean", Float) = 0
         [HideInInspector][ToggleUI]_TransparentWritingMotionVec("Boolean", Float) = 0
-        [HideInInspector][ToggleUI]_AlphaCutoffEnable("Boolean", Float) = 0
-        [HideInInspector]_TransparentSortPriority("_TransparentSortPriority", Float) = 0
+        //[HideInInspector]_TransparentSortPriority("_TransparentSortPriority", Float) = 0
         [HideInInspector][ToggleUI]_UseShadowThreshold("Boolean", Float) = 0
-        [HideInInspector][ToggleUI]_DoubleSidedEnable("Boolean", Float) = 1
-        [HideInInspector][Enum(Flip, 0, Mirror, 1, None, 2)]_DoubleSidedNormalMode("Float", Float) = 0
-        [HideInInspector]_DoubleSidedConstants("Vector4", Vector) = (1, 1, -1, 0)
-        [HideInInspector][Enum(Auto, 0, On, 1, Off, 2)]_DoubleSidedGIMode("Float", Float) = 0
-        [HideInInspector][ToggleUI]_TransparentDepthPrepassEnable("Boolean", Float) = 0
-        [HideInInspector][ToggleUI]_TransparentDepthPostpassEnable("Boolean", Float) = 0
-        [HideInInspector][ToggleUI]_PerPixelSorting("Boolean", Float) = 0
-        [HideInInspector]_SurfaceType("Float", Float) = 1
-        [HideInInspector]_BlendMode("Float", Float) = 0
-        [HideInInspector]_SrcBlend("Float", Float) = 1
-        [HideInInspector]_DstBlend("Float", Float) = 0
-        [HideInInspector]_DstBlend2("Float", Float) = 0
-        [HideInInspector]_AlphaSrcBlend("Float", Float) = 1
-        [HideInInspector]_AlphaDstBlend("Float", Float) = 0
-        [HideInInspector][ToggleUI]_ZWrite("Boolean", Float) = 1
-        [HideInInspector][ToggleUI]_TransparentZWrite("Boolean", Float) = 1
-        [HideInInspector]_CullMode("Float", Float) = 2
-        [HideInInspector][ToggleUI]_EnableFogOnTransparent("Boolean", Float) = 1
-        [HideInInspector]_CullModeForward("Float", Float) = 2
-        [HideInInspector][Enum(Front, 1, Back, 2)]_TransparentCullMode("Float", Float) = 2
-        [HideInInspector][Enum(UnityEngine.Rendering.HighDefinition.OpaqueCullMode)]_OpaqueCullMode("Float", Float) = 2
-        [HideInInspector]_ZTestDepthEqualForOpaque("Float", Int) = 4
-        [HideInInspector][Enum(UnityEngine.Rendering.CompareFunction)]_ZTestTransparent("Float", Float) = 4
-        [HideInInspector][ToggleUI]_TransparentBackfaceEnable("Boolean", Float) = 0
+        [HideInInspector]_DoubleSidedGIMode("Float", Float) = 1
+        //[HideInInspector][ToggleUI]_PerPixelSorting("Boolean", Float) = 0
+        //[HideInInspector]_SurfaceType("Float", Float) = 0
+        //_BlendMode("_BlendMode", Float) = 0.0
+        [ToggleUI]_EnableFogOnTransparent("_EnableFogOnTransparent", Float) = 1
         [HideInInspector][ToggleUI]_RequireSplitLighting("Boolean", Float) = 0
         [HideInInspector][ToggleUI]_ReceivesSSR("Boolean", Float) = 1
         [HideInInspector][ToggleUI]_ReceivesSSRTransparent("Boolean", Float) = 0
         [HideInInspector][ToggleUI]_EnableBlendModePreserveSpecularLighting("Boolean", Float) = 1
         [HideInInspector][ToggleUI]_SupportDecals("Boolean", Float) = 1
         [HideInInspector][ToggleUI]_ExcludeFromTUAndAA("Boolean", Float) = 0
-        [HideInInspector]_StencilRef("Float", Int) = 0
-        [HideInInspector]_StencilWriteMask("Float", Int) = 6
-        [HideInInspector]_StencilRefDepth("Float", Int) = 0
-        [HideInInspector]_StencilWriteMaskDepth("Float", Int) = 9
-        [HideInInspector]_StencilRefMV("Float", Int) = 32
-        [HideInInspector]_StencilWriteMaskMV("Float", Int) = 41
-        [HideInInspector]_StencilRefDistortionVec("Float", Int) = 4
-        [HideInInspector]_StencilWriteMaskDistortionVec("Float", Int) = 4
-        [HideInInspector]_StencilWriteMaskGBuffer("Float", Int) = 15
-        [HideInInspector]_StencilRefGBuffer("Float", Int) = 2
-        [HideInInspector]_ZTestGBuffer("Float", Int) = 4
+        //[HideInInspector]_ZTestGBuffer("Float", Int) = 4
         [HideInInspector][ToggleUI]_RayTracing("Boolean", Float) = 0
-        [HideInInspector][Enum(None, 0, Planar, 1, Sphere, 2, Thin, 3)]_RefractionModel("Float", Float) = 0
-        [HideInInspector][Enum(Translucent, 5)]_MaterialID("_MaterialID", Float) = 5
-        [HideInInspector]_MaterialTypeMask("_MaterialTypeMask", Float) = 32
-        [HideInInspector][ToggleUI]_TransmissionEnable("Boolean", Float) = 1
+        //[HideInInspector][Enum(None, 0, Planar, 1, Sphere, 2, Thin, 3)]_RefractionModel("Float", Float) = 0
+        //[HideInInspector][Enum(Translucent, 5)]_MaterialID("_MaterialID", Float) = 5
+        //[HideInInspector]_MaterialTypeMask("_MaterialTypeMask", Float) = 32
         [HideInInspector][NoScaleOffset]unity_Lightmaps("unity_Lightmaps", 2DArray) = "" {}
         [HideInInspector][NoScaleOffset]unity_LightmapsInd("unity_LightmapsInd", 2DArray) = "" {}
         [HideInInspector][NoScaleOffset]unity_ShadowMasks("unity_ShadowMasks", 2DArray) = "" {}
@@ -95,11 +62,7 @@ Shader "GOcean/Ocean"
         Tags
         {
             "RenderPipeline"="HDRenderPipeline"
-            "RenderType"="HDLitShader"
-            "Queue"="Transparent+0"
-            //"DisableBatching"="False"
-            //"ShaderGraphShader"="true"
-            //"ShaderGraphTargetId"="HDLitSubTarget"
+            "Queue"="Transparent"
         }
         Pass
         {
@@ -130,10 +93,7 @@ Shader "GOcean/Ocean"
             #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
         
             // Keywords
-            #define _SURFACE_TYPE_TRANSPARENT
             #pragma shader_feature_local _ _ADD_PRECOMPUTED_VELOCITY
-            #pragma shader_feature_local _ _TRANSPARENT_WRITES_MOTION_VEC _TRANSPARENT_REFRACTIVE_SORT
-            #pragma shader_feature_local_fragment _ _ENABLE_FOG_ON_TRANSPARENT
             #pragma multi_compile _ DEBUG_DISPLAY
             #pragma shader_feature_local_fragment _ _DISABLE_DECALS
             #pragma shader_feature_local_fragment _ _DISABLE_SSR
@@ -151,15 +111,18 @@ Shader "GOcean/Ocean"
             #pragma multi_compile_fragment AREA_SHADOW_MEDIUM AREA_SHADOW_HIGH
             #pragma multi_compile_fragment SCREEN_SPACE_SHADOWS_OFF SCREEN_SPACE_SHADOWS_ON
             #pragma multi_compile_fragment USE_FPTL_LIGHTLIST USE_CLUSTERED_LIGHTLIST
-            #define _MATERIAL_FEATURE_TRANSMISSION
             #pragma multi_compile_fragment _ HAS_TERRAIN_ON
         
             // Defines
+            #define _SURFACE_TYPE_TRANSPARENT
+            #define _MATERIAL_FEATURE_TRANSMISSION
+            #define _ENABLE_FOG_ON_TRANSPARENT
+
             #define SHADERPASS SHADERPASS_FORWARD
             #define SUPPORT_BLENDMODE_PRESERVE_SPECULAR_LIGHTING 1
             #define HAS_LIGHTLOOP 1
-            #define RAYTRACING_SHADER_GRAPH_DEFAULT
-            #define SHADER_LIT 1
+            //#define RAYTRACING_SHADER_GRAPH_DEFAULT
+            //#define SHADER_LIT 1
             #define SUPPORT_GLOBAL_MIP_BIAS 1
             #define REQUIRE_DEPTH_TEXTURE
         
@@ -176,19 +139,6 @@ Shader "GOcean/Ocean"
             #include "Packages/com.unity.shadergraph/ShaderGraphLibrary/Functions.hlsl" // Need to be here for Gradient struct definition
         
             // --------------------------------------------------
-            // Defines
-        
-            // Attribute
-            #define ATTRIBUTES_NEED_NORMAL
-            #define ATTRIBUTES_NEED_TANGENT
-            #define ATTRIBUTES_NEED_TEXCOORD1
-            #define ATTRIBUTES_NEED_TEXCOORD2
-            #define VARYINGS_NEED_POSITION_WS
-            #define VARYINGS_NEED_TANGENT_TO_WORLD
-            #define VARYINGS_NEED_TEXCOORD1
-            #define VARYINGS_NEED_TEXCOORD2
-            #define HAVE_MESH_MODIFICATION
-        
             //Strip down the FragInputs.hlsl (on graphics), so we can only optimize the interpolators we use.
             //if by accident something requests contents of FragInputs.hlsl, it will be caught as a compiler error
             //Frag inputs stripping is only enabled when FRAG_INPUTS_ENABLE_STRIPPING is set
@@ -196,25 +146,9 @@ Shader "GOcean/Ocean"
             #define FRAG_INPUTS_ENABLE_STRIPPING
             #endif
 
-            #define FRAG_INPUTS_USE_TEXCOORD1
-            #define FRAG_INPUTS_USE_TEXCOORD2
-        
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/FragInputs.hlsl"
         
             #define VARYINGS_NEED_CULLFACE
-        
-            // Following two define are a workaround introduce in 10.1.x for RaytracingQualityNode
-            // The ShaderGraph don't support correctly migration of this node as it serialize all the node data
-            // in the json file making it impossible to uprgrade. Until we get a fix, we do a workaround here
-            // to still allow us to rename the field and keyword of this node without breaking existing code.
-            #ifdef RAYTRACING_SHADER_GRAPH_DEFAULT
-            #define RAYTRACING_SHADER_GRAPH_HIGH
-            #endif
-        
-            #ifdef RAYTRACING_SHADER_GRAPH_RAYTRACED
-            #define RAYTRACING_SHADER_GRAPH_LOW
-            #endif
-            // end
         
             // Specific Material Define
             #define _SPECULAR_OCCLUSION_FROM_AO 1
@@ -228,11 +162,6 @@ Shader "GOcean/Ocean"
                 #undef  _REFRACTION_PLANE
                 #undef  _REFRACTION_SPHERE
                 #define _REFRACTION_THIN
-            #endif
-        
-            // Translate transparent motion vector define
-            #if (defined(_TRANSPARENT_WRITES_MOTION_VEC) || defined(_TRANSPARENT_REFRACTIVE_SORT)) && defined(_SURFACE_TYPE_TRANSPARENT)
-                #define _WRITE_TRANSPARENT_MOTION_VECTOR
             #endif
         
             // -- Graph Properties
@@ -285,7 +214,6 @@ Shader "GOcean/Ocean"
             TEXTURE2D(_FoamTexture);
             SAMPLER(sampler_FoamTexture);
             TEXTURE2D_ARRAY(_TerrainHeightmapArrayTexture);
-            SAMPLER(sampler_TerrainHeightmapArrayTexture);
         
             // Includes
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
@@ -670,7 +598,8 @@ Shader "GOcean/Ocean"
         }
     }
     
-    CustomEditor "UnityEditor.ShaderGraph.GenericShaderGraphMaterialGUI"
-    CustomEditorForRenderPipeline "Rendering.HighDefinition.LitShaderGraphGUI" "UnityEngine.Rendering.HighDefinition.HDRenderPipelineAsset"
+    //CustomEditor "UnityEditor.ShaderGraph.GenericShaderGraphMaterialGUI"
+    //CustomEditorForRenderPipeline "Rendering.HighDefinition.LitShaderGraphGUI" "UnityEngine.Rendering.HighDefinition.HDRenderPipelineAsset"
     FallBack "Hidden/Shader Graph/FallbackError"
+    CustomEditor "GOcean.OceanGUI"
 }

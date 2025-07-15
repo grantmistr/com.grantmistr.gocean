@@ -1,9 +1,7 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace GOcean
 {
@@ -52,8 +50,11 @@ namespace GOcean
         private RTHandleSystem rtHandleSystem = new RTHandleSystem();
         private CustomPasses customPasses = new CustomPasses();
 
-        public event EventHandler OnInitialized;
-        public event EventHandler OnUnInitialized;
+        public delegate void OnInitializedEventHandler();
+        public delegate void OnUnInitializedEventHandler();
+        public event OnInitializedEventHandler OnInitialized;
+        public event OnUnInitializedEventHandler OnUnInitialized;
+
         private bool isInitialized = false;
         public bool IsInitialized
         {
@@ -67,18 +68,21 @@ namespace GOcean
 
                 isInitialized = value;
 
-                if (value)
+                if (value != prevValue)
                 {
-                    if (value != prevValue)
+                    if (value)
                     {
-                        OnInitialized?.Invoke(this, new EventArgs());
+                        if (OnInitialized != null)
+                        {
+                            OnInitialized();
+                        }
                     }
-                }
-                else
-                {
-                    if (value != prevValue)
+                    else
                     {
-                        OnUnInitialized?.Invoke(this, new EventArgs());
+                        if (OnUnInitialized != null)
+                        {
+                            OnUnInitialized();
+                        }
                     }
                 }
             }
@@ -208,13 +212,11 @@ namespace GOcean
 
         public void Initialize()
         {
-            if (!PipelineSupportCustomPass())
+            if (!PipelineCompatibilityChecker.IsValid())
             {
-                Debug.Log("Ocean requires Custom Pass to be enabled in your HDRP Asset.");
                 return;
             }
 
-            // init first to disable them so no errors thrown
             customPasses.DisableVolumes();
 
             if (!ComponentCheck())
@@ -361,12 +363,6 @@ namespace GOcean
             return !invalid;
         }
 
-        private bool PipelineSupportCustomPass()
-        {
-            HDRenderPipelineAsset a = GraphicsSettings.currentRenderPipeline as HDRenderPipelineAsset;
-            return a.currentPlatformRenderPipelineSettings.supportCustomPass;
-        }
-
         /// <summary>
         /// Only call this on init / re-init
         /// </summary>
@@ -464,6 +460,14 @@ namespace GOcean
             if (instance == this)
             {
                 instance = null;
+            }
+        }
+
+        public void LogKeywords()
+        {
+            foreach (LocalKeyword kw in OceanM.enabledKeywords)
+            {
+                Debug.Log(kw.ToString());
             }
         }
 

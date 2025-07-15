@@ -94,10 +94,14 @@ namespace GOcean
     [System.Serializable]
     public class GenericParamsUser : BaseParamsUser
     {
-        [Tooltip("Write screen water to depth buffer before post processing. Useful for depth of field.")]
-        public bool waterWritesToDepth = true;
+        public const uint PROP_COUNT = 4;
+
+        public bool receiveSSR = false;
         public int randomSeed = 0;
         public float waterHeight = 100f;
+        [Tooltip("Sets the sorting priority for the ocean relative to other transparent objects. Ocean should usually render before all other transparent objects.")]
+        [Range(-100, 100)]
+        public int sortingPriority = -50;
     }
 
     [System.Serializable]
@@ -160,7 +164,6 @@ namespace GOcean
         public float refractionStrength = 5f;
         [ColorUsage(true, true)]
         public Color waterColor = new Color(0.3915094f, 0.70573f, 1f);
-        [Tooltip("Luminance of this color is equal to the diffusion profile radius multiplier.")]
         [ColorUsage(true, true)]
         public Color scatteringColor = new Color(0.2520915f, 0.3896481f, 0.5188679f);
         [Min(1f)]
@@ -230,6 +233,8 @@ namespace GOcean
     [System.Serializable]
     public class ScreenParamsUser : BaseParamsUser
     {
+        [Tooltip("Write screen water to depth buffer before post processing. Useful for depth of field.")]
+        public bool screenWaterWritesToDepth = true;
         public Texture2D screenWaterNoiseTexture;
         [Min(0f)]
         public float screenWaterTiling = 0.2f;

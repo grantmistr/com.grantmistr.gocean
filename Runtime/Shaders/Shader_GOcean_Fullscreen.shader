@@ -20,7 +20,7 @@ Shader "GOcean/Fullscreen"
     #pragma target 4.5
     #pragma vertex Vert
 
-    #pragma multi_compile_fragment _ WATER_WRITES_TO_DEPTH
+    #pragma multi_compile_fragment _ SCREEN_WATER_WRITES_TO_DEPTH
 
     // maybe use ULTRA_LOW shadows
     #define PUNCTUAL_SHADOW_LOW
@@ -212,7 +212,7 @@ Shader "GOcean/Fullscreen"
     }
 
     float4 UnderwaterTint(Varyings varyings
-#ifdef WATER_WRITES_TO_DEPTH        
+#ifdef SCREEN_WATER_WRITES_TO_DEPTH        
         , out float outputDepth: SV_Depth
 #endif
         ) : SV_Target
@@ -236,7 +236,7 @@ Shader "GOcean/Fullscreen"
         color *= underwaterMask ? lightRays : 1.0;
         color *= underwaterMask ? _UnderwaterFogColor.xyz : 1.0;
     
-#ifdef WATER_WRITES_TO_DEPTH
+#ifdef SCREEN_WATER_WRITES_TO_DEPTH
         float depth = LoadCameraDepth(varyings.positionCS.xy);
         bool screenWaterAlphaMask = !underwaterMask && (temporaryBlurTextureSample.y > 0.0);
         float screenWaterDepth = screenWaterAlphaMask ? UNITY_NEAR_CLIP_VALUE : 1.0 - UNITY_NEAR_CLIP_VALUE;
@@ -245,7 +245,7 @@ Shader "GOcean/Fullscreen"
 #else
         outputDepth = min(screenWaterDepth, depth);
 #endif
-#endif // WATER_WRITES_TO_DEPTH
+#endif // SCREEN_WATER_WRITES_TO_DEPTH
 
         color *= 1.0 - temporaryBlurTextureSample.y * !underwaterMask * 0.1;
     
@@ -253,7 +253,7 @@ Shader "GOcean/Fullscreen"
     }
 
     float4 TransferFinal(Varyings varyings
-#ifdef WATER_WRITES_TO_DEPTH
+#ifdef SCREEN_WATER_WRITES_TO_DEPTH
         , out float depth: SV_Depth
 #endif
         ) : SV_Target
@@ -262,7 +262,7 @@ Shader "GOcean/Fullscreen"
 
         float4 color = _TemporaryColorTexture[varyings.positionCS.xy];
     
-#ifdef WATER_WRITES_TO_DEPTH
+#ifdef SCREEN_WATER_WRITES_TO_DEPTH
         depth = _WaterDepthTexture[varyings.positionCS.xy].x;
 #endif    
     

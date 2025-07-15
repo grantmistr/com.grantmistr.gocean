@@ -3,6 +3,7 @@ using UnityEngine;
 namespace GOcean
 {
     [RequireComponent(typeof(Rigidbody))]
+    [AddComponentMenu("GOcean/Floater")]
     public class Floater : MonoBehaviour
     {
         public BuoyancyInfluence[] buoyancyInfluences = new BuoyancyInfluence[0];

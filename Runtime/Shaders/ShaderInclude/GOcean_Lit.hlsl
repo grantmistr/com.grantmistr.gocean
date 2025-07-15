@@ -435,7 +435,7 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     bsdfData.perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surfaceData.perceptualSmoothness);
 
     // There is no metallic with SSS and specular color mode
-    float metallic = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR | MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION) ? 0.0 : surfaceData.metallic;
+    float metallic = 0.0;
 
     bsdfData.diffuseColor = ComputeDiffuseColor(surfaceData.baseColor, metallic);
     bsdfData.fresnel0     = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR) ? surfaceData.specularColor :
@@ -450,14 +450,14 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     // However in practice we keep parity between deferred and forward, so we should constrain the various features.
     // The UI is in charge of setuping the constrain, not the code. So if users is forward only and want unleash power, it is easy to unleash by some UI change
 
-    bsdfData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
+    bsdfData.diffusionProfileIndex = 0;
 
-    if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
-    {
-        // Assign profile id and overwrite fresnel0
-        FillMaterialSSS(bsdfData.diffusionProfileIndex, surfaceData.subsurfaceMask, bsdfData);
-        FillMaterialAdvancedSSS(bsdfData);
-    }
+    //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
+    //{
+    //    // Assign profile id and overwrite fresnel0
+    //    FillMaterialSSS(bsdfData.diffusionProfileIndex, surfaceData.subsurfaceMask, bsdfData);
+    //    FillMaterialAdvancedSSS(bsdfData);
+    //}
 
     bsdfData.transmittance = surfaceData.transmittanceColor * surfaceData.transmittanceMask;
     
@@ -470,38 +470,26 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     //        FillMaterialTransmission(bsdfData.diffusionProfileIndex, surfaceData.thickness, surfaceData.transmissionMask, bsdfData);
     //}
 
-    if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_ANISOTROPY))
-    {
-        FillMaterialAnisotropy(surfaceData.anisotropy, surfaceData.tangentWS, cross(surfaceData.normalWS, surfaceData.tangentWS), bsdfData);
-    }
+    //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_ANISOTROPY))
+    //{
+    //    FillMaterialAnisotropy(surfaceData.anisotropy, surfaceData.tangentWS, cross(surfaceData.normalWS, surfaceData.tangentWS), bsdfData);
+    //}
 
-    if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_IRIDESCENCE))
-    {
-        FillMaterialIridescence(surfaceData.iridescenceMask, surfaceData.iridescenceThickness, bsdfData);
-    }
+    //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_IRIDESCENCE))
+    //{
+    //    FillMaterialIridescence(surfaceData.iridescenceMask, surfaceData.iridescenceThickness, bsdfData);
+    //}
 
-    if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
-    {
-        // Modify perceptualRoughness
-        FillMaterialClearCoatData(surfaceData.coatMask, bsdfData);
-    }
+    //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
+    //{
+    //    // Modify perceptualRoughness
+    //    FillMaterialClearCoatData(surfaceData.coatMask, bsdfData);
+    //}
 
     // roughnessT and roughnessB are clamped, and are meant to be used with punctual and directional lights.
     // perceptualRoughness is not clamped, and is meant to be used for IBL.
     // perceptualRoughness can be modify by FillMaterialClearCoatData, so ConvertAnisotropyToClampRoughness must be call after
     ConvertAnisotropyToRoughness(bsdfData.perceptualRoughness, bsdfData.anisotropy, bsdfData.roughnessT, bsdfData.roughnessB);
-
-#if HAS_REFRACTION
-    // Note: Reuse thickness of transmission's property set
-    FillMaterialTransparencyData(surfaceData.baseColor, surfaceData.metallic, surfaceData.ior, surfaceData.transmittanceColor,
-    #ifdef _REFRACTION_THIN
-                                 // We set both atDistance and thickness to the same, small value
-                                 REFRACTION_THIN_DISTANCE, REFRACTION_THIN_DISTANCE,
-    #else
-                                 surfaceData.atDistance, surfaceData.thickness,
-    #endif
-                                 surfaceData.transmittanceMask, bsdfData);
-#endif
 
     ApplyDebugToBSDFData(bsdfData);
 
@@ -1198,37 +1186,37 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     float clampedNdotV = ClampNdotV(preLightData.NdotV);
 
     // We modify the bsdfData.fresnel0 here for iridescence
-    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_IRIDESCENCE))
-    {
-        float viewAngle = clampedNdotV;
-        float topIor = 1.0; // Default is air
-        if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
-        {
-            topIor = lerp(1.0, CLEAR_COAT_IOR, bsdfData.coatMask);
-            // HACK: Use the reflected direction to specify the Fresnel coefficient for pre-convolved envmaps
-            if (bsdfData.coatMask != 0.0f) // We must make sure that effect is neutral when coatMask == 0
-                viewAngle = sqrt(1.0 + Sq(1.0 / topIor) * (Sq(dot(bsdfData.normalWS, V)) - 1.0));
-        }
-
-        if (bsdfData.iridescenceMask > 0.0)
-        {
-            bsdfData.fresnel0 = lerp(bsdfData.fresnel0, EvalIridescence(topIor, viewAngle, bsdfData.iridescenceThickness, bsdfData.fresnel0), bsdfData.iridescenceMask);
-        }
-    }
+    //if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_IRIDESCENCE))
+    //{
+    //    float viewAngle = clampedNdotV;
+    //    float topIor = 1.0; // Default is air
+    //    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
+    //    {
+    //        topIor = lerp(1.0, CLEAR_COAT_IOR, bsdfData.coatMask);
+    //        // HACK: Use the reflected direction to specify the Fresnel coefficient for pre-convolved envmaps
+    //        if (bsdfData.coatMask != 0.0f) // We must make sure that effect is neutral when coatMask == 0
+    //            viewAngle = sqrt(1.0 + Sq(1.0 / topIor) * (Sq(dot(bsdfData.normalWS, V)) - 1.0));
+    //    }
+    //
+    //    if (bsdfData.iridescenceMask > 0.0)
+    //    {
+    //        bsdfData.fresnel0 = lerp(bsdfData.fresnel0, EvalIridescence(topIor, viewAngle, bsdfData.iridescenceThickness, bsdfData.fresnel0), bsdfData.iridescenceMask);
+    //    }
+    //}
 
     // We modify the bsdfData.fresnel0 here for clearCoat
-    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
-    {
-        // Fresnel0 is deduced from interface between air and material (Assume to be 1.5 in Unity, or a metal).
-        // but here we go from clear coat (1.5) to material, we need to update fresnel0
-        // Note: Schlick is a poor approximation of Fresnel when ieta is 1 (1.5 / 1.5), schlick target 1.4 to 2.2 IOR.
-        bsdfData.fresnel0 = lerp(bsdfData.fresnel0, ConvertF0ForAirInterfaceToF0ForClearCoat15(bsdfData.fresnel0), bsdfData.coatMask);
-
-        preLightData.coatPartLambdaV = GetSmithJointGGXPartLambdaV(clampedNdotV, CLEAR_COAT_ROUGHNESS);
-        preLightData.coatIblR = reflect(-V, N);
-        preLightData.coatIblF = F_Schlick(CLEAR_COAT_F0, clampedNdotV) * bsdfData.coatMask;
-        preLightData.coatReflectionWeight = 0.0;
-    }
+    //if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
+    //{
+    //    // Fresnel0 is deduced from interface between air and material (Assume to be 1.5 in Unity, or a metal).
+    //    // but here we go from clear coat (1.5) to material, we need to update fresnel0
+    //    // Note: Schlick is a poor approximation of Fresnel when ieta is 1 (1.5 / 1.5), schlick target 1.4 to 2.2 IOR.
+    //    bsdfData.fresnel0 = lerp(bsdfData.fresnel0, ConvertF0ForAirInterfaceToF0ForClearCoat15(bsdfData.fresnel0), bsdfData.coatMask);
+    //
+    //    preLightData.coatPartLambdaV = GetSmithJointGGXPartLambdaV(clampedNdotV, CLEAR_COAT_ROUGHNESS);
+    //    preLightData.coatIblR = reflect(-V, N);
+    //    preLightData.coatIblF = F_Schlick(CLEAR_COAT_F0, clampedNdotV) * bsdfData.coatMask;
+    //    preLightData.coatReflectionWeight = 0.0;
+    //}
 
     // Handle IBL + area light + multiscattering.
     // Note: use the not modified by anisotropy iblPerceptualRoughness here.
@@ -1254,17 +1242,17 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 
     // We avoid divergent evaluation of the GGX, as that nearly doubles the cost.
     // If the tile has anisotropy, all the pixels within the tile are evaluated as anisotropic.
-    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_ANISOTROPY))
-    {
-        float TdotV = dot(bsdfData.tangentWS,   V);
-        float BdotV = dot(bsdfData.bitangentWS, V);
-
-        preLightData.partLambdaV = GetSmithJointGGXAnisoPartLambdaV(TdotV, BdotV, clampedNdotV, bsdfData.roughnessT, bsdfData.roughnessB);
-
-        // perceptualRoughness is use as input and output here
-        GetGGXAnisotropicModifiedNormalAndRoughness(bsdfData.bitangentWS, bsdfData.tangentWS, N, V, bsdfData.anisotropy, preLightData.iblPerceptualRoughness, iblN, preLightData.iblPerceptualRoughness);
-    }
-    else
+    //if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_ANISOTROPY))
+    //{
+    //    float TdotV = dot(bsdfData.tangentWS,   V);
+    //    float BdotV = dot(bsdfData.bitangentWS, V);
+    //
+    //    preLightData.partLambdaV = GetSmithJointGGXAnisoPartLambdaV(TdotV, BdotV, clampedNdotV, bsdfData.roughnessT, bsdfData.roughnessB);
+    //
+    //    // perceptualRoughness is use as input and output here
+    //    GetGGXAnisotropicModifiedNormalAndRoughness(bsdfData.bitangentWS, bsdfData.tangentWS, N, V, bsdfData.anisotropy, preLightData.iblPerceptualRoughness, iblN, preLightData.iblPerceptualRoughness);
+    //}
+    //else
     {
         preLightData.partLambdaV = GetSmithJointGGXPartLambdaV(clampedNdotV, bsdfData.roughnessT);
         iblN = N;
@@ -1281,23 +1269,23 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 #else
     preLightData.ltcTransformDiffuse = SampleLtcMatrix(bsdfData.perceptualRoughness, clampedNdotV, LTCLIGHTINGMODEL_DISNEY_DIFFUSE);
 
-    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_SSS_DIFFUSE_POWER))
-        ModifyDisneyLTCTransformForDiffusePower(preLightData.ltcTransformDiffuse, GetDiffusePower(bsdfData.diffusionProfileIndex), bsdfData.perceptualRoughness, clampedNdotV);
+    //if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_SSS_DIFFUSE_POWER))
+    //    ModifyDisneyLTCTransformForDiffusePower(preLightData.ltcTransformDiffuse, GetDiffusePower(bsdfData.diffusionProfileIndex), bsdfData.perceptualRoughness, clampedNdotV);
 #endif
 
     float perceptualRoughnessA = bsdfData.perceptualRoughness;
 
     // This is a dynamic branch if the MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING flag is enabled.
-    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_SSS_DUAL_LOBE))
-    {
-        float lobeA, lobeB, perceptualRoughnessB;
-        GetDualLobeParameters(bsdfData.diffusionProfileIndex, lobeA, lobeB, preLightData.ltcLobeMix);
-
-        perceptualRoughnessA = PerceptualSmoothnessToPerceptualRoughness(saturate((1.0f - bsdfData.perceptualRoughness) * lobeA));
-        perceptualRoughnessB = PerceptualSmoothnessToPerceptualRoughness(saturate((1.0f - bsdfData.perceptualRoughness) * lobeB));
-
-        preLightData.ltcTransformSpecular[1] = SampleLtcMatrix(perceptualRoughnessB, clampedNdotV, LTCLIGHTINGMODEL_GGX);
-    }
+    //if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_SSS_DUAL_LOBE))
+    //{
+    //    float lobeA, lobeB, perceptualRoughnessB;
+    //    GetDualLobeParameters(bsdfData.diffusionProfileIndex, lobeA, lobeB, preLightData.ltcLobeMix);
+    //
+    //    perceptualRoughnessA = PerceptualSmoothnessToPerceptualRoughness(saturate((1.0f - bsdfData.perceptualRoughness) * lobeA));
+    //    perceptualRoughnessB = PerceptualSmoothnessToPerceptualRoughness(saturate((1.0f - bsdfData.perceptualRoughness) * lobeB));
+    //
+    //    preLightData.ltcTransformSpecular[1] = SampleLtcMatrix(perceptualRoughnessB, clampedNdotV, LTCLIGHTINGMODEL_GGX);
+    //}
 
     preLightData.ltcTransformSpecular[0] = SampleLtcMatrix(perceptualRoughnessA, clampedNdotV, LTCLIGHTINGMODEL_GGX);
 
@@ -1305,22 +1293,22 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     preLightData.orthoBasisViewNormal = GetOrthoBasisViewNormal(V, N, preLightData.NdotV);
 
     preLightData.ltcTransformCoat = 0.0;
-    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
-    {
-        preLightData.ltcTransformCoat = SampleLtcMatrix(CLEAR_COAT_PERCEPTUAL_ROUGHNESS, clampedNdotV, LTCLIGHTINGMODEL_GGX);
-    }
+    //if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
+    //{
+    //    preLightData.ltcTransformCoat = SampleLtcMatrix(CLEAR_COAT_PERCEPTUAL_ROUGHNESS, clampedNdotV, LTCLIGHTINGMODEL_GGX);
+    //}
 
     // refraction (forward only)
-#if HAS_REFRACTION
-    RefractionModelResult refraction = REFRACTION_MODEL(V, posInput, bsdfData);
-    preLightData.transparentRefractV = refraction.rayWS;
-    preLightData.transparentPositionWS = refraction.positionWS;
-    preLightData.transparentTransmittance = exp(-bsdfData.absorptionCoefficient * refraction.dist);
-
-    // Empirical remap to try to match a bit the refraction probe blurring for the fallback
-    // Use IblPerceptualRoughness so we can handle approx of clear coat.
-    preLightData.transparentSSMipLevel = PositivePow(preLightData.iblPerceptualRoughness, 1.3) * uint(max(_ColorPyramidLodCount - 1, 0));
-#endif
+//#if HAS_REFRACTION
+//    RefractionModelResult refraction = REFRACTION_MODEL(V, posInput, bsdfData);
+//    preLightData.transparentRefractV = refraction.rayWS;
+//    preLightData.transparentPositionWS = refraction.positionWS;
+//    preLightData.transparentTransmittance = exp(-bsdfData.absorptionCoefficient * refraction.dist);
+//
+//    // Empirical remap to try to match a bit the refraction probe blurring for the fallback
+//    // Use IblPerceptualRoughness so we can handle approx of clear coat.
+//    preLightData.transparentSSMipLevel = PositivePow(preLightData.iblPerceptualRoughness, 1.3) * uint(max(_ColorPyramidLodCount - 1, 0));
+//#endif
 
     return preLightData;
 }
@@ -1346,10 +1334,10 @@ void ModifyBakedDiffuseLighting(float3 V, PositionInputs posInput, PreLightData 
     }
 
     // For SSS we need to take into account the state of diffuseColor
-    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
-    {
-        bsdfData.diffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
-    }
+    //if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
+    //{
+    //    bsdfData.diffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
+    //}
 
     // Premultiply (back) bake diffuse lighting information with DisneyDiffuse pre-integration
     // Note: When baking reflection probes, we approximate the diffuse with the fresnel0
@@ -1451,8 +1439,9 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
 
     // The compiler should optimize these. Can revisit later if necessary.
     cbsdf.diffR = diffTerm * diffuseNdotL;
-    cbsdf.diffT = diffTerm * flippedNdotL;
-    cbsdf.diffT += t;
+    //cbsdf.diffT = diffTerm * flippedNdotL;
+    cbsdf.diffT = 1.0;
+    //cbsdf.diffT += t;
 
     // Probably worth branching here for perf reasons.
     // This branch will be optimized away if there's no transmission.

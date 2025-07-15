@@ -5,8 +5,8 @@ namespace GOcean
 {
     public class BaseParamsUserDrawer : PropertyDrawer
     {
-        private const float PROPERTY_HEIGHT = 16f, PADDING_HEIGHT = 4f;
-        private const float OFFSET_STEP = PROPERTY_HEIGHT + PADDING_HEIGHT;
+        public const float PROPERTY_HEIGHT = 16f, PADDING_HEIGHT = 4f;
+        public const float OFFSET_STEP = PROPERTY_HEIGHT + PADDING_HEIGHT;
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
@@ -58,13 +58,29 @@ namespace GOcean
     {
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            return base.GetPropertyHeight(property, label);
+            return (PROPERTY_HEIGHT + PADDING_HEIGHT * 2f) * (float)GenericParamsUser.PROP_COUNT + PADDING_HEIGHT * 2f;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             SetManagedReferenceValueIfNull<GenericParamsUser>(property);
-            base.OnGUI(position, property, label);
+
+            int parentPropDepth = property.depth;
+            float offset = OFFSET_STEP;
+
+            if (property.NextVisible(true))
+            {
+                Rect propRect;
+
+                do
+                {
+                    propRect = new Rect(position.x, position.y + offset, position.width, EditorGUI.GetPropertyHeight(property));
+                    EditorGUI.PropertyField(propRect, property);
+
+                    offset += OFFSET_STEP;
+                }
+                while (property.NextVisible(false) && property.depth > parentPropDepth);
+            }
         }
     }
 

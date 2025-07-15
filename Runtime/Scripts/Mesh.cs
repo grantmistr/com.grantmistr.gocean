@@ -10,7 +10,7 @@ namespace GOcean
     public class Mesh : Component
     {
         public const int MAX_SUPPORTED_TESSELLATION_LEVEL = 6;
-        public const int INDIRECT_ARGS_LENGTH = 15;
+        public const int INDIRECT_ARGS_LENGTH = 11;
         public const int UNDERWATER_MASK_VERTEX_COUNT = 12;
 
         [ShaderParam("_ChunkSize")]
@@ -47,8 +47,8 @@ namespace GOcean
         public Bounds MeshBounds { get { return meshBounds; } }
         private Bounds meshBounds = new Bounds(Vector3.zero, Vector3.one);
 
-        public Bounds MeshBoundsHDRP { get { return meshBoundsHDRP; } }
-        private Bounds meshBoundsHDRP = new Bounds(Vector3.zero, Vector3.one);
+        public Bounds MeshBoundsCameraRelative { get { return meshBoundsCameraRelative; } }
+        private Bounds meshBoundsCameraRelative = new Bounds(Vector3.zero, Vector3.one);
 
         public bool DrawMesh { get { return drawMesh; } }
         private bool drawMesh = true;
@@ -59,10 +59,9 @@ namespace GOcean
         public static class IndirectArgsOffsetsByte
         {
             public const uint
-                VERTEX_COUNT = 0,
-                TOTAL_VERTEX_COUNT = 16,
-                TRIANGLE_FILL = 32,
-                DISPLACE_VERTICES = 44;
+                VERTEX_COUNT = IndirectArgsOffsets.VERTEX_COUNT * 4,
+                TOTAL_VERTEX_COUNT = IndirectArgsOffsets.TOTAL_VERTEX_COUNT * 4,
+                TRIANGLE_FILL = IndirectArgsOffsets.TRIANGLE_FILL * 4;
         }
 
         /// <summary>
@@ -73,8 +72,7 @@ namespace GOcean
             public const uint
                 VERTEX_COUNT = 0,
                 TOTAL_VERTEX_COUNT = 4,
-                TRIANGLE_FILL = 8,
-                DISPLACE_VERTICES = 11;
+                TRIANGLE_FILL = 8;
         }
 
         /// <summary>
@@ -278,7 +276,7 @@ namespace GOcean
         {
             UpdateBounds(cameraPosition);
             
-            drawMesh = GeometryUtility.TestPlanesAABB(frustumPlanes, meshBoundsHDRP);
+            drawMesh = GeometryUtility.TestPlanesAABB(frustumPlanes, meshBoundsCameraRelative);
 
             if (!drawMesh)
             {
@@ -321,13 +319,13 @@ namespace GOcean
         private void UpdateBounds(Vector3 cameraPosition)
         {
             meshBounds.center = new Vector3(ocean.CameraPositionStepped.x, components.Generic.waterHeight, ocean.CameraPositionStepped.y);
-            meshBoundsHDRP.center = meshBounds.center - cameraPosition;
+            meshBoundsCameraRelative.center = new Vector3(ocean.CameraPositionStepped.z, meshBounds.center.y - cameraPosition.y, ocean.CameraPositionStepped.w);
         }
 
         public void UpdateBounds(float maxAmplitude)
         {
             meshBounds = new Bounds(Vector3.zero, new Vector3(meshBounds.size.x, maxAmplitude * 2f, meshBounds.size.z));
-            meshBoundsHDRP = meshBounds;
+            meshBoundsCameraRelative = meshBounds;
         }
 
         public void InitializeBounds(int chunkSize, int chunkGridResolution)
@@ -335,7 +333,7 @@ namespace GOcean
             int width = chunkSize * chunkGridResolution;
 
             meshBounds = new Bounds(Vector3.zero, new Vector3(width, meshBounds.size.y, width));
-            meshBoundsHDRP = meshBounds;
+            meshBoundsCameraRelative = meshBounds;
         }
 
         private void InitializeRenderParams()
@@ -416,8 +414,6 @@ namespace GOcean
         /// 0-3: forward / depth draw args : reset 0                <br/>
         /// 4-7: screen mask draw args : reset 4                    <br/>
         /// 8-10: triangle fill dispatch args : reset 10            <br/>
-        /// 11-13: displace vertex dispatch args : reset 11         <br/>
-        /// 14: byte offset to read edge chunks in triangle buffer  <br/>
         /// </summary>
         private void InitializeIndirectArgsBuffer()
         {
@@ -435,11 +431,9 @@ namespace GOcean
             {
                 indirectArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, sizeof(uint) * INDIRECT_ARGS_LENGTH);
                 uint[] args = new uint[INDIRECT_ARGS_LENGTH] {
-                    0, 1, 0, 0, // water surface rendering
-                    0, 1, 0, 0, // underwater mask pyramid
-                    1, 1, 0,    // triangle fill dispatch args
-                    0, 1, 1,    // displace vertex dispatch args
-                    0           // byte offset to read edge chunks in triangle buffer
+                    0, 1, 0, 0, // water surface / vertex count
+                    0, 1, 0, 0, // screen mask / total vert count
+                    1, 1, 0     // triangle fill dispatch args
                 };
                 indirectArgsBuffer.SetData(args);
             }
@@ -468,7 +462,7 @@ namespace GOcean
                 }
             }
 
-            return count * 3 + 12;
+            return count * 3 + UNDERWATER_MASK_VERTEX_COUNT;
         }
 
         private int GetChunkTriCount(int chunkType, int chunkTessellation, MeshChunkArray meshChunkArray)

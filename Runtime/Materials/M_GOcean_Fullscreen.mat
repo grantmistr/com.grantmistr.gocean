@@ -28,10 +28,11 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - WATER_WRITES_TO_DEPTH
+  - SCREEN_WATER_WRITES_TO_DEPTH
   m_InvalidKeywords:
   - HAS_TERRAIN
   - HAS_TERRAIN_ON
+  - WATER_WRITES_TO_DEPTH
   - _DISABLE_SSR_TRANSPARENT
   - _NORMALMAP_TANGENT_SPACE
   m_LightmapFlags: 4
@@ -266,7 +267,7 @@ Material:
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
     - _RefractionModel: 0
-    - _ScreenWaterFadeSpeed: 400
+    - _ScreenWaterFadeSpeed: 200
     - _ScreenWaterTiling: 0.2
     - _Smoothness: 0.9
     - _SmoothnessRemapMax: 1

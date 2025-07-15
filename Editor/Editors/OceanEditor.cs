@@ -67,10 +67,17 @@ namespace GOcean
                 components.Terrain.RemoveTerrainDataFromAllTerrains();
             }
 
+            GUILayout.Space(14f);
+
             if (GUILayout.Button("Print Mesh Chunks to Console"))
             {
                 MeshChunks.MeshChunkArray meshChunkArray = new MeshChunks.MeshChunkArray(true);
                 Debug.Log(meshChunkArray.ToString());
+            }
+
+            if (GUILayout.Button("Log Keywords"))
+            {
+                ocean.LogKeywords();
             }
         }
 

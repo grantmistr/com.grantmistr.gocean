@@ -13,12 +13,12 @@ namespace GOcean
         [ShaderParam("_RandomNoiseTextureResolution")]
         public const int RANDOM_NOISE_TEXTURE_RESOLUTION = 256;
 
-        public bool waterWritesToDepth;
+        public int sortingPriority;
 
         [ShaderParam("_RandomSeed")]
         public int randomSeed;
         private bool newSeed = true;
-        
+
         [ShaderParam("_WaterHeight")]
         public float waterHeight;
         [ShaderParamGlobal("_RandomNoiseTexture")]
@@ -31,7 +31,7 @@ namespace GOcean
         public RTHandle temporaryBlurTexture;
 
         private RenderParams oceanRenderParams, distantOceanRenderParams;
-        private int shaderPassForwardOcean, shaderPassForwardDistantOcean, shaderPassTransferFinal, shaderPassTransferFinalWriteDepth;
+        private int shaderPassForwardOcean, shaderPassForwardDistantOcean;
 
         public Generic()
         {
@@ -43,7 +43,6 @@ namespace GOcean
 
             FindShaderPasses();
             InitializeTextures();
-            SetMaterialKeywords();
             CreateRenderParams();
         }
 
@@ -59,14 +58,16 @@ namespace GOcean
         {
             GenericParamsUser u = userParams as GenericParamsUser;
 
-            waterWritesToDepth = u.waterWritesToDepth;
             waterHeight = u.waterHeight;
             randomSeed = UpdateRandomSeed(u.randomSeed);
+            sortingPriority = u.sortingPriority;
         }
 
-        private void SetMaterialKeywords()
+        public override void SetShaderParams()
         {
-            SetKeyword(ocean.FullscreenM, PropIDs.ShaderKeywords.WATER_WRITES_TO_DEPTH, waterWritesToDepth);
+            ocean.OceanM.renderQueue = (int)RenderQueue.Transparent + sortingPriority;
+
+            base.SetShaderParams();
         }
 
         private int UpdateRandomSeed(int userRandomSeed)
@@ -96,8 +97,6 @@ namespace GOcean
         {
             shaderPassForwardOcean = ocean.OceanM.FindPass("Forward");
             shaderPassForwardDistantOcean = ocean.DistantOceanM.FindPass("Forward");
-            shaderPassTransferFinal = ocean.FullscreenM.FindPass("TransferFinal");
-            shaderPassTransferFinalWriteDepth = ocean.FullscreenM.FindPass("TransferFinalWriteDepth");
         }
 
         private void InitializeTextures()
@@ -255,20 +254,6 @@ namespace GOcean
             if (components.Mesh.DrawMesh)
             {
                 cmd.DrawProceduralIndirect(Matrix4x4.identity, ocean.OceanM, shaderPassForwardOcean, MeshTopology.Triangles, components.Mesh.indirectArgsBuffer, (int)Mesh.IndirectStartCommand.VERTEX_COUNT);
-            }
-        }
-
-        public void TransferFinal(CommandBuffer cmd, RTHandle cameraColorBuffer, RTHandle cameraDepthBuffer, MaterialPropertyBlock propertyBlock)
-        {
-            if (waterWritesToDepth)
-            {
-                CoreUtils.SetRenderTarget(cmd, cameraColorBuffer, cameraDepthBuffer);
-                CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassTransferFinalWriteDepth);
-            }
-            else
-            {
-                CoreUtils.SetRenderTarget(cmd, cameraColorBuffer);
-                CoreUtils.DrawFullScreen(cmd, ocean.FullscreenM, propertyBlock, shaderPassTransferFinal);
             }
         }
     }

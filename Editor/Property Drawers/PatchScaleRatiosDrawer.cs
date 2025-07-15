@@ -18,7 +18,7 @@ namespace GOcean
         {
             Rect controlRect = EditorGUI.PrefixLabel(position, label);
 
-            EditorGUIUtility.labelWidth = controlRect.width / 12f;
+            EditorGUIUtility.labelWidth = 30f;
 
             property.NextVisible(true);
 
